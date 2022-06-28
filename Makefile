@@ -96,7 +96,7 @@ run:
 	./$(EXEC)
 
 memcheck:
-	valgrind --tool=memcheck --track-origins=yes ./$(EXEC)
+	valgrind --tool=memcheck --track-origins=yes --leak-check=full ./$(EXEC)
 
 clean:
 	rm -fr $(ODIR)/ $(DDIR)/ $(EXEC) *.d *.o *.a *.so

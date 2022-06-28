@@ -27,6 +27,7 @@
 #include "lex.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -84,8 +85,7 @@ static inline void add_op(const char op) {
     // Unary operator
     if ((op == '-') && (tokens->last > 0)) {
         const struct Token last_token = tokens->list[tokens->last - 1];
-        if ((last_token.type == TOK_OPERATOR) ||
-            (last_token.type == TOK_UNARY_OPERATOR)) {
+        if (is_operator(last_token)) {
             tok.type = TOK_UNARY_OPERATOR;
         }
     }
@@ -147,7 +147,8 @@ struct TokenList *lex(const char *const line) {
             case '-':
             case '*':
             case '/':
-            case '^': {
+            case '^':
+            case '=': {
                 add_op(*c);
                 c++;
                 break;
@@ -159,12 +160,17 @@ struct TokenList *lex(const char *const line) {
                 break;
             }
             default: {
-                print_error("Unrecognized character at lexical analysis: %s\n", c);
+                print_error("Unrecognized character at lexical analysis: %s\n",
+                            c);
                 return NULL;
             }
         }
     }
     return tokens;
+}
+
+bool is_operator(const struct Token tok) {
+    return ((tok.type == TOK_OPERATOR) || (tok.type == TOK_UNARY_OPERATOR));
 }
 
 void print_token(const struct Token tok) {

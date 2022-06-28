@@ -21,62 +21,37 @@
 // SOFTWARE.
 
 //------------------------------------------------------------------------------
-// SOURCE
+// HEADER
 //------------------------------------------------------------------------------
 
-#define _GNU_SOURCE
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef __INTERPRETER
+#define __INTERPRETER
 
-#include "interpreter.h"
-#include "lex.h"
 #include "parser.h"
-#include "print_errors.h"
 
-void repl(const char *const line) {
-    struct TokenList *tokens = lex(line);
-    if (tokens != NULL) {
-        // print_tokens(tokens);
-        struct Token_Node *head = parser(tokens);
-        if (head != NULL) {
-            printf("%lg\n", evaluate(head));
-            print_tree(head);
-        }
-        free_tree(head);
-    }
-}
+struct Variable {
+    char *name;
+    double value;
+};
 
-bool is_exit(const char *const line) {
-    const char *const exit = "exit";
-    return !strncmp(line, exit, strlen(exit));
-}
+// Table used to save the list of variables
+struct VariableList {
+    struct Variable *list;
+    size_t last;
+    size_t size;
+};
 
-//------------------------------------------------------------------------------
-// MAIN
-//------------------------------------------------------------------------------
+void init_variables(void);
+void free_variables(void);
+size_t search_variable(const char *const name, const unsigned int length);
+void new_variable(char *const name, const unsigned int length,
+                  const double value);
+double assign_variable(char *const name, const unsigned int length,
+                       const double value);
+double get_variable(const char *const name, const unsigned int length);
+double evaluate(const struct Token_Node *const node);
 
-int main(void) {
-    char *line = NULL;
-    size_t len = 0;
-    init_lex();
-    init_variables();
-    while (true) {
-        printf("> ");
-        if (getline(&line, &len, stdin) == -1) {
-            print_crash_and_exit("Could't get line from stdin!\n");
-        }
-        if (is_exit(line)) {
-            break;
-        }
-        repl(line);
-    }
-    free_lex();
-    free_variables();
-    free(line);
-    return EXIT_SUCCESS;
-}
+#endif  // __INTERPRETER
 
 //------------------------------------------------------------------------------
 // END

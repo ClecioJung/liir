@@ -28,13 +28,19 @@
 #define __LEX
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 enum TokTypes {
-    TOK_OPERATOR,        // +, -, *, / and ^
+    TOK_OPERATOR,        // +, -, *, /, ^ and =
     TOK_UNARY_OPERATOR,  // -
     TOK_DELIMITER,       // ( and )
     TOK_NUMBER,
     TOK_NAME,
+};
+
+struct String {
+    char *string;
+    unsigned int length;
 };
 
 struct Token {
@@ -42,10 +48,7 @@ struct Token {
     union {
         char op;
         double number;
-        struct {
-            char *string;
-            unsigned int length;
-        } name;
+        struct String name;
     };
 };
 
@@ -59,6 +62,7 @@ struct TokenList {
 void init_lex(void);
 void free_lex(void);
 struct TokenList *lex(const char *const line);
+bool is_operator(const struct Token tok);
 void print_token(const struct Token tok);
 void print_tokens(const struct TokenList *tokens);
 
