@@ -99,7 +99,7 @@ static inline void insert_new_op(struct Token_Node **head,
             if (get_op_precedence(next->tok.op) <= precedence) {
                 break;
             }
-            // Division has higher left precendence
+            // Division has higher left precedence
             if (next->tok.op == '/') {
                 break;
             }
@@ -150,6 +150,13 @@ double evaluate(const struct Token_Node *const node) {
                     return (evaluate(node->left) / evaluate(node->right));
                 case '^':
                     return pow(evaluate(node->left), evaluate(node->right));
+                default:
+                    return NAN;
+            }
+        case TOK_UNARY_OPERATOR:
+            switch (node->tok.op) {
+                case '-':
+                    return (-evaluate(node->right));
                 default:
                     return NAN;
             }

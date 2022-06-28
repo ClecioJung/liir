@@ -30,7 +30,8 @@
 #include <stdlib.h>
 
 enum TokTypes {
-    TOK_OPERATOR,
+    TOK_OPERATOR,        // +, -, *, / and ^
+    TOK_UNARY_OPERATOR,  // -
     TOK_NUMBER,
     TOK_NAME,
 };

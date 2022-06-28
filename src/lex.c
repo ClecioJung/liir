@@ -81,6 +81,14 @@ static inline void add_op(const char op) {
         .type = TOK_OPERATOR,
         .op = op,
     };
+    // Unary operator
+    if ((op == '-') && (tokens->last > 0)) {
+        const struct Token last_token = tokens->list[tokens->last - 1];
+        if ((last_token.type == TOK_OPERATOR) ||
+            (last_token.type == TOK_UNARY_OPERATOR)) {
+            tok.type = TOK_UNARY_OPERATOR;
+        }
+    }
     add_token(tok);
 }
 
@@ -148,15 +156,19 @@ struct TokenList *lex(const char *const line) {
 void print_token(const struct Token tok) {
     switch (tok.type) {
         case TOK_OPERATOR:
-            fputs("OPERATOR ", stdout);
+            fputs("OPERATOR  ", stdout);
+            printf("%c\n", tok.op);
+            break;
+        case TOK_UNARY_OPERATOR:
+            fputs("UNARY OP. ", stdout);
             printf("%c\n", tok.op);
             break;
         case TOK_NUMBER:
-            fputs("NUMBER   ", stdout);
+            fputs("NUMBER    ", stdout);
             printf("%g\n", tok.number);
             break;
         case TOK_NAME:
-            fputs("NAME     ", stdout);
+            fputs("NAME      ", stdout);
             printf("%.*s\n", tok.name.length, tok.name.string);
             break;
     }
