@@ -32,6 +32,7 @@
 enum TokTypes {
     TOK_OPERATOR,        // +, -, *, / and ^
     TOK_UNARY_OPERATOR,  // -
+    TOK_DELIMITER,       // ( and )
     TOK_NUMBER,
     TOK_NAME,
 };

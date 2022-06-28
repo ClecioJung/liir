@@ -44,7 +44,7 @@ void free_tree(const struct Token_Node *const node) {
 
 static size_t get_op_precedence(const char op) {
     const char precedence[] = {
-        '^', '*', '/', '+', '-',
+        '^', '/', '*', '-', '+',
     };
     const size_t num_ops = sizeof(precedence) / sizeof(precedence[0]);
     for (size_t index = 0; index < num_ops; index++) {
@@ -55,7 +55,7 @@ static size_t get_op_precedence(const char op) {
     return num_ops;
 }
 
-static inline struct Token_Node *new_node(const struct Token tok) {
+static struct Token_Node *new_node(const struct Token tok) {
     struct Token_Node *const node =
         (struct Token_Node *)malloc(sizeof(struct Token_Node));
     if (node != NULL) {
@@ -68,9 +68,6 @@ static inline struct Token_Node *new_node(const struct Token tok) {
 
 static inline void insert_node_right(struct Token_Node **const head,
                                      struct Token_Node *const node) {
-    if (head == NULL) {
-        return;
-    }
     if (*head == NULL) {
         *head = node;
     } else {
@@ -84,9 +81,6 @@ static inline void insert_node_right(struct Token_Node **const head,
 
 static inline void insert_new_op(struct Token_Node **head,
                                  struct Token_Node *const node) {
-    if (head == NULL) {
-        return;
-    }
     if (*head == NULL) {
         *head = node;
         return;
@@ -117,18 +111,45 @@ static inline void insert_new_op(struct Token_Node **head,
     }
 }
 
+struct Token_Node *parse_parentheses(const struct TokenList *const tokens,
+                                     size_t *const tkIndex) {
+    if (tkIndex == NULL) {
+        return NULL;
+    }
+    struct Token_Node *head = NULL;
+    while ((*tkIndex < tokens->last) && (tokens->list[*tkIndex].op != ')')) {
+        if (tokens->list[*tkIndex].op == '(') {
+            (*tkIndex)++;
+            struct Token_Node *const node = parse_parentheses(tokens, tkIndex);
+            insert_node_right(&head, node);
+            if (*tkIndex >= tokens->last) {
+                print_error("Too many opening parentheses!\n");
+                free_tree(head);
+                head = NULL;
+                break;
+            }
+        } else if (tokens->list[*tkIndex].type == TOK_OPERATOR) {
+            struct Token_Node *const node = new_node(tokens->list[*tkIndex]);
+            insert_new_op(&head, node);
+        } else {
+            struct Token_Node *const node = new_node(tokens->list[*tkIndex]);
+            insert_node_right(&head, node);
+        }
+        (*tkIndex)++;
+    }
+    return head;
+}
+
 struct Token_Node *parser(const struct TokenList *const tokens) {
     if (tokens->last == 0) {
         return NULL;
     }
-    struct Token_Node *head = NULL;
-    for (size_t tkIndex = 0; tkIndex < tokens->last; tkIndex++) {
-        struct Token_Node *const node = new_node(tokens->list[tkIndex]);
-        if (node->tok.type == TOK_OPERATOR) {
-            insert_new_op(&head, node);
-        } else {
-            insert_node_right(&head, node);
-        }
+    size_t tkIndex = 0;
+    struct Token_Node *head = parse_parentheses(tokens, &tkIndex);
+    if (tkIndex < tokens->last) {
+        print_error("Too many closing parentheses!\n");
+        free_tree(head);
+        head = NULL;
     }
     return head;
 }
@@ -151,6 +172,8 @@ double evaluate(const struct Token_Node *const node) {
                 case '^':
                     return pow(evaluate(node->left), evaluate(node->right));
                 default:
+                    print_error("Invalid operator at evaluation phase: %c\n",
+                                node->tok.op);
                     return NAN;
             }
         case TOK_UNARY_OPERATOR:
@@ -158,18 +181,33 @@ double evaluate(const struct Token_Node *const node) {
                 case '-':
                     return (-evaluate(node->right));
                 default:
+                    print_error(
+                        "Invalid unary operator at evaluation phase: %c\n",
+                        node->tok.op);
                     return NAN;
             }
         case TOK_NUMBER:
             return node->tok.number;
         case TOK_NAME:
+            print_error(
+                "Variables and functions are not implemented yet: %.*s\n",
+                node->tok.name.length, node->tok.name.string);
+            return NAN;
+        case TOK_DELIMITER:
+            print_error("Unexpected delimiter at evaluation phase: %c\n",
+                        node->tok.op);
+            return NAN;
         default:
+            print_error("Invalid token at evaluation phase: %c\n",
+                        node->tok.op);
             return NAN;
     }
 }
 
 void print_node(const struct Token_Node *const node, const unsigned int level) {
-    if (node == NULL) return;
+    if (node == NULL) {
+        return;
+    }
     print_token(node->tok);
     if (node->left) {
         printf("%*sLEFT:  ", level * 2, "");

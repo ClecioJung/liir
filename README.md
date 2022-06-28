@@ -2,11 +2,20 @@
 
 ## Overview
 
-**liir** is a simple [REPL (Read, eval, print and loop)](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) system developed in C. It posseses the following characteristics:
+**liir** is a simple [REPL (Read, eval, print and loop)](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) system developed in C. LIIR stands for `Leia, interprete, imprima e repita` which is the brazilian portuguese translation for the english acronym `Read, eval, print and loop - REPL`. 
+This project posseses the following characteristics:
 
 - Developed with C11;
 - This code was tested only on Linux (compiled with GNU GCC);
-- LIIR stands for `Leia, interprete, imprima e repita` which is the brazilian portuguese translation for the english acronym `Read, eval, print and loop - REPL`;
+- All the operations are performed with `double` precision floating point numbers (64 bits);
+- Implemented binary operators:
+    - Adition (`+`);
+    - Subtraction (`-`);
+    - Multiplication (`*`);
+    - Division (`/`);
+    - Exponentiation (`^`);
+- Implemented unary operators:
+    - Minus sign (`-`);
 
 ## Usage
 

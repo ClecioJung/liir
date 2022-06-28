@@ -92,6 +92,14 @@ static inline void add_op(const char op) {
     add_token(tok);
 }
 
+static inline void add_delimiter(const char delimiter) {
+    struct Token tok = (struct Token){
+        .type = TOK_DELIMITER,
+        .op = delimiter,
+    };
+    add_token(tok);
+}
+
 static inline char *add_number(const char *const first) {
     char *end = (char *)first;
     double number = strtod(first, &end);
@@ -144,8 +152,14 @@ struct TokenList *lex(const char *const line) {
                 c++;
                 break;
             }
+            case '(':
+            case ')': {
+                add_delimiter(*c);
+                c++;
+                break;
+            }
             default: {
-                print_error("Unrecognized token: %s\n", c);
+                print_error("Unrecognized character at lexical analysis: %s\n", c);
                 return NULL;
             }
         }
@@ -163,6 +177,10 @@ void print_token(const struct Token tok) {
             fputs("UNARY OP. ", stdout);
             printf("%c\n", tok.op);
             break;
+        case TOK_DELIMITER:
+            fputs("DELIMITER ", stdout);
+            printf("%c\n", tok.op);
+            break;
         case TOK_NUMBER:
             fputs("NUMBER    ", stdout);
             printf("%g\n", tok.number);
@@ -175,8 +193,10 @@ void print_token(const struct Token tok) {
 }
 
 void print_tokens(const struct TokenList *tokens) {
-    if (tokens->last == 0) return;
-    fputs("Token    Value\n", stdout);
+    if (tokens->last == 0) {
+        return;
+    }
+    fputs("Token     Value\n", stdout);
     for (size_t tkIndex = 0; tkIndex < tokens->last; tkIndex++) {
         print_token(tokens->list[tkIndex]);
     }
