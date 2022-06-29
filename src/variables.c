@@ -194,11 +194,13 @@ void print_variables(void) {
     const char *const header = "Name";
     const unsigned int max_length =
         max_uint(longest_name_variables(), strlen(header));
+    printf("List of variables:\n");
     printf("%-*s Value\n", max_length, header);
     for (size_t i = 0; i < variables->size; i++) {
         printf("%-*s %lg\n", max_length, variables->list[i].name,
                variables->list[i].value);
     }
+    printf("\n");
 }
 
 //------------------------------------------------------------------------------
