@@ -123,14 +123,14 @@ struct Token_Node *parse_parentheses(const struct TokenList *const tokens,
         return NULL;
     }
     struct Token_Node *head = NULL;
-    while ((*tkIndex < tokens->last) && (tokens->list[*tkIndex].op != ')')) {
+    while ((*tkIndex < tokens->size) && (tokens->list[*tkIndex].op != ')')) {
         struct Token_Node *node = NULL;
         bool ok = true;
         if (tokens->list[*tkIndex].op == '(') {
             (*tkIndex)++;
             node = parse_parentheses(tokens, tkIndex);
             ok = insert_node_right(&head, node);
-            if (*tkIndex >= tokens->last) {
+            if (*tkIndex >= tokens->size) {
                 print_error("Too many opening parentheses!\n");
                 ok = false;
             }
@@ -153,12 +153,12 @@ struct Token_Node *parse_parentheses(const struct TokenList *const tokens,
 }
 
 struct Token_Node *parser(const struct TokenList *const tokens) {
-    if (tokens->last == 0) {
+    if (tokens->size == 0) {
         return NULL;
     }
     size_t tkIndex = 0;
     struct Token_Node *head = parse_parentheses(tokens, &tkIndex);
-    if ((tkIndex < tokens->last) && (tokens->list[tkIndex].op == ')')) {
+    if ((tkIndex < tokens->size) && (tokens->list[tkIndex].op == ')')) {
         print_error("Too many closing parentheses!\n");
         free_tree(head);
         head = NULL;

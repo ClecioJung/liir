@@ -37,17 +37,20 @@ struct Variable {
 // Table used to save the list of variables
 struct VariableList {
     struct Variable *list;
-    size_t last;
     size_t size;
+    size_t capacitity;
 };
 
 void init_variables(void);
 void free_variables(void);
-size_t search_variable(const char *const name, const unsigned int length);
-void new_variable(char *const name, const unsigned int length,
-                  const double value);
+void clear_variables(void);
+int search_variable(const char *const name, const unsigned int length,
+                    size_t *const index);
+void new_variable(const size_t index, char *const name,
+                  const unsigned int length, const double value);
 double assign_variable(char *const name, const unsigned int length,
                        const double value);
+double delete_variable(char *const name, const unsigned int length);
 double get_variable(const char *const name, const unsigned int length);
 void print_variables(void);
 

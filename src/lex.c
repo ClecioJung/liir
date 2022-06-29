@@ -46,7 +46,7 @@ void resize_token_list(const size_t size) {
         print_crash_and_exit("Could't reallocate memory for the lexer!\n");
     }
     tokens->list = newList;
-    tokens->size = size;
+    tokens->capacity = size;
 }
 
 void init_lex(void) {
@@ -55,8 +55,8 @@ void init_lex(void) {
         print_crash_and_exit("Could't allocate memory for the lexer!\n");
     }
     tokens->list = NULL;
+    tokens->capacity = 0;
     tokens->size = 0;
-    tokens->last = 0;
     resize_token_list(INITIAL_TOKEN_LIST_SIZE);
 }
 
@@ -70,11 +70,11 @@ void free_lex(void) {
 
 void add_token(const struct Token tok) {
     // Allocates more memory if necessary
-    if (tokens->last >= tokens->size) {
-        resize_token_list(2 * tokens->size);
+    if (tokens->size >= tokens->capacity) {
+        resize_token_list(2 * tokens->capacity);
     }
-    tokens->list[tokens->last] = tok;
-    tokens->last++;
+    tokens->list[tokens->size] = tok;
+    tokens->size++;
 }
 
 static inline void add_op(const char op) {
@@ -83,8 +83,8 @@ static inline void add_op(const char op) {
         .op = op,
     };
     // Unary operator
-    if ((op == '-') && (tokens->last > 0)) {
-        const struct Token last_token = tokens->list[tokens->last - 1];
+    if ((op == '-') && (tokens->size > 0)) {
+        const struct Token last_token = tokens->list[tokens->size - 1];
         if (is_operator(last_token)) {
             tok.type = TOK_UNARY_OPERATOR;
         }
@@ -129,7 +129,7 @@ static inline char *add_name(const char *const first) {
 }
 
 struct TokenList *lex(const char *const line) {
-    tokens->last = 0;
+    tokens->size = 0;
     const char *c = line;
     while (*c != '\0') {
         if (isdigit(*c) || *c == '.') {
@@ -199,11 +199,11 @@ void print_token(const struct Token tok) {
 }
 
 void print_tokens(const struct TokenList *tokens) {
-    if (tokens->last == 0) {
+    if (tokens->size == 0) {
         return;
     }
     fputs("Token     Value\n", stdout);
-    for (size_t tkIndex = 0; tkIndex < tokens->last; tkIndex++) {
+    for (size_t tkIndex = 0; tkIndex < tokens->size; tkIndex++) {
         print_token(tokens->list[tkIndex]);
     }
 }

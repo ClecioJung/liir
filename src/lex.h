@@ -55,8 +55,8 @@ struct Token {
 // Table used to save the list of tokens
 struct TokenList {
     struct Token *list;
-    size_t last;
     size_t size;
+    size_t capacity;
 };
 
 void init_lex(void);
