@@ -24,9 +24,11 @@
 // SOURCE
 //------------------------------------------------------------------------------
 
-#include "interpreter.h"
+#include "variables.h"
 
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "parser.h"
@@ -116,59 +118,29 @@ double get_variable(const char *name, const unsigned int length) {
     return variables->list[index].value;
 }
 
-double evaluate(const struct Token_Node *const node) {
-    if (node == NULL) {
-        return NAN;
+unsigned int max_uint(const unsigned int a, const unsigned int b) {
+    return ((a > b) ? a : b);
+}
+
+unsigned int longest_name_variables(void) {
+    unsigned int length = 0;
+    for (size_t i = 0; i < variables->last; i++) {
+        length = max_uint(length, strlen(variables->list[i].name));
     }
-    switch (node->tok.type) {
-        case TOK_OPERATOR:
-            switch (node->tok.op) {
-                case '+':
-                    return (evaluate(node->left) + evaluate(node->right));
-                case '-':
-                    return (evaluate(node->left) - evaluate(node->right));
-                case '*':
-                    return (evaluate(node->left) * evaluate(node->right));
-                case '/':
-                    return (evaluate(node->left) / evaluate(node->right));
-                case '^':
-                    return pow(evaluate(node->left), evaluate(node->right));
-                case '=': {
-                    if (node->left->tok.type != TOK_NAME) {
-                        print_error("Expected variable name for atribution!\n");
-                        return NAN;
-                    }
-                    return assign_variable(node->left->tok.name.string,
-                                           node->left->tok.name.length,
-                                           evaluate(node->right));
-                }
-                default:
-                    print_error("Invalid operator at evaluation phase: %c\n",
-                                node->tok.op);
-                    return NAN;
-            }
-        case TOK_UNARY_OPERATOR:
-            switch (node->tok.op) {
-                case '-':
-                    return (-evaluate(node->right));
-                default:
-                    print_error(
-                        "Invalid unary operator at evaluation phase: %c\n",
-                        node->tok.op);
-                    return NAN;
-            }
-        case TOK_NUMBER:
-            return node->tok.number;
-        case TOK_NAME:
-            return get_variable(node->tok.name.string, node->tok.name.length);
-        case TOK_DELIMITER:
-            print_error("Unexpected delimiter at evaluation phase: %c\n",
-                        node->tok.op);
-            return NAN;
-        default:
-            print_error("Invalid token at evaluation phase: %c\n",
-                        node->tok.op);
-            return NAN;
+    return length;
+}
+
+void print_variables(void) {
+    if (variables->last == 0) {
+        return;
+    }
+    const char *const header = "Name";
+    const unsigned int max_length =
+        max_uint(longest_name_variables(), strlen(header));
+    printf("%-*s Value\n", max_length, header);
+    for (size_t i = 0; i < variables->last; i++) {
+        printf("%-*s %lg\n", max_length, variables->list[i].name,
+               variables->list[i].value);
     }
 }
 

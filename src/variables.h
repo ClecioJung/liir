@@ -24,8 +24,8 @@
 // HEADER
 //------------------------------------------------------------------------------
 
-#ifndef __INTERPRETER
-#define __INTERPRETER
+#ifndef __VARIABLES
+#define __VARIABLES
 
 #include "parser.h"
 
@@ -49,9 +49,9 @@ void new_variable(char *const name, const unsigned int length,
 double assign_variable(char *const name, const unsigned int length,
                        const double value);
 double get_variable(const char *const name, const unsigned int length);
-double evaluate(const struct Token_Node *const node);
+void print_variables(void);
 
-#endif  // __INTERPRETER
+#endif  // __VARIABLES
 
 //------------------------------------------------------------------------------
 // END

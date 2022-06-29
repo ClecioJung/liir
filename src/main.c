@@ -30,10 +30,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "interpreter.h"
 #include "lex.h"
 #include "parser.h"
 #include "print_errors.h"
+#include "variables.h"
 
 void repl(const char *const line) {
     struct TokenList *tokens = lex(line);
@@ -44,6 +44,7 @@ void repl(const char *const line) {
             printf("%lg\n", evaluate(head));
             print_tree(head);
         }
+        // print_variables();
         free_tree(head);
     }
 }
