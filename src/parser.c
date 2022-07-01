@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "functions.h"
 #include "lex.h"
 #include "print_errors.h"
 #include "variables.h"
@@ -43,12 +44,12 @@ void free_tree(const struct Token_Node *const node) {
     free((void *)node);
 }
 
-static size_t get_op_precedence(const char op) {
+static int get_op_precedence(const char op) {
     const char precedence[] = {
         '^', '/', '*', '-', '+',
     };
-    const size_t num_ops = sizeof(precedence) / sizeof(precedence[0]);
-    for (size_t index = 0; index < num_ops; index++) {
+    const int num_ops = sizeof(precedence) / sizeof(precedence[0]);
+    for (int index = 0; index < num_ops; index++) {
         if (op == precedence[index]) {
             return index;
         }
@@ -76,9 +77,14 @@ bool insert_node_right(struct Token_Node **const head,
         while (previous->right != NULL) {
             previous = previous->right;
         }
-        if (!is_operator(previous->tok) && !is_operator(node->tok)) {
-            print_error("Invalid expression!\n");
-            return false;
+        if ((previous->tok.type == TOK_NUMBER) ||
+            (previous->tok.type == TOK_VARIABLE)) {
+            if ((node->tok.type == TOK_NUMBER) ||
+                (node->tok.type == TOK_VARIABLE) ||
+                (node->tok.type == TOK_FUNCTION)) {
+                print_error("Invalid expression!\n");
+                return false;
+            }
         }
         previous->right = node;
     }
@@ -92,7 +98,7 @@ bool insert_new_op(struct Token_Node **head, struct Token_Node *const node) {
         struct Token_Node *previous = NULL;
         {  // Search for the correct place to insert the node
             struct Token_Node *next = *head;
-            const size_t precedence = get_op_precedence(node->tok.op);
+            const int precedence = get_op_precedence(node->tok.op);
             while ((next != NULL) && (next->tok.type == TOK_OPERATOR)) {
                 if (get_op_precedence(next->tok.op) <= precedence) {
                     break;
@@ -118,32 +124,39 @@ bool insert_new_op(struct Token_Node **head, struct Token_Node *const node) {
 }
 
 struct Token_Node *parse_parentheses(const struct TokenList *const tokens,
-                                     size_t *const tkIndex) {
+                                     int *const tkIndex) {
     if (tkIndex == NULL) {
         return NULL;
     }
     struct Token_Node *head = NULL;
     while ((*tkIndex < tokens->size) && (tokens->list[*tkIndex].op != ')')) {
-        struct Token_Node *node = NULL;
         bool ok = true;
         if (tokens->list[*tkIndex].op == '(') {
             (*tkIndex)++;
-            node = parse_parentheses(tokens, tkIndex);
+            struct Token_Node *const node = parse_parentheses(tokens, tkIndex);
             ok = insert_node_right(&head, node);
+            if (!ok) {
+                free(node);
+            }
             if (*tkIndex >= tokens->size) {
                 print_error("Too many opening parentheses!\n");
                 ok = false;
             }
         } else if (tokens->list[*tkIndex].type == TOK_OPERATOR) {
-            node = new_node(tokens->list[*tkIndex]);
+            struct Token_Node *const node = new_node(tokens->list[*tkIndex]);
             ok = insert_new_op(&head, node);
+            if (!ok) {
+                free(node);
+            }
         } else {
-            node = new_node(tokens->list[*tkIndex]);
+            struct Token_Node *const node = new_node(tokens->list[*tkIndex]);
             ok = insert_node_right(&head, node);
+            if (!ok) {
+                free(node);
+            }
         }
         if (!ok) {
             free_tree(head);
-            free(node);
             head = NULL;
             break;
         }
@@ -156,7 +169,7 @@ struct Token_Node *parser(const struct TokenList *const tokens) {
     if (tokens->size == 0) {
         return NULL;
     }
-    size_t tkIndex = 0;
+    int tkIndex = 0;
     struct Token_Node *head = parse_parentheses(tokens, &tkIndex);
     if ((tkIndex < tokens->size) && (tokens->list[tkIndex].op == ')')) {
         print_error("Too many closing parentheses!\n");
@@ -184,7 +197,7 @@ double evaluate(const struct Token_Node *const node) {
                 case '^':
                     return pow(evaluate(node->left), evaluate(node->right));
                 case '=': {
-                    if (node->left->tok.type != TOK_NAME) {
+                    if (node->left->tok.type != TOK_VARIABLE) {
                         print_error("Expected variable name for atribution!\n");
                         return NAN;
                     }
@@ -209,7 +222,21 @@ double evaluate(const struct Token_Node *const node) {
             }
         case TOK_NUMBER:
             return node->tok.number;
-        case TOK_NAME:
+        case TOK_FUNCTION: {
+            const struct Function function =
+                functions[node->tok.function_index];
+            if (function.fn == NULL) {
+                return NAN;
+            }
+            switch (function.arity) {
+                case 1:
+                    return function.fn(evaluate(node->right));
+                case 0:
+                default:
+                    return function.fn(NAN);
+            }
+        }
+        case TOK_VARIABLE:
             return get_variable(node->tok.name.string, node->tok.name.length);
         case TOK_DELIMITER:
             print_error("Unexpected delimiter at evaluation phase: %c\n",

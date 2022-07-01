@@ -24,38 +24,27 @@
 // HEADER
 //------------------------------------------------------------------------------
 
-#ifndef __VARIABLES
-#define __VARIABLES
+#ifndef __FUNCTIONS
+#define __FUNCTIONS
 
-#include "parser.h"
+#include <stdbool.h>
 
-struct Variable {
+typedef double (*Function_Pointer)(double arg);
+
+struct Function {
     char *name;
-    double value;
+    int arity;          // number of expected arguments (0, 1 or 2)
+    bool return_value;  // the function returns a value?
+    Function_Pointer fn;
 };
 
-// Table used to save the list of variables
-struct VariableList {
-    struct Variable *list;
-    int size;
-    int capacitity;
-};
+extern const struct Function functions[];
+extern const int functions_quantity;
 
-void init_variables(void);
-void free_variables(void);
-void clear_variables(void);
-int search_variable(const char *const name, const unsigned int length,
-                    int *const index);
-void new_variable(const int index, char *const name, const unsigned int length,
-                  const double value);
-double assign_variable(char *const name, const unsigned int length,
-                       const double value);
-double delete_variable(char *const name, const unsigned int length);
-double get_variable(const char *const name, const unsigned int length);
-void print_variables(void);
-bool variable_list_is_empty(void);
+int search_function(const char *const name);
+void print_functions(void);
 
-#endif  // __VARIABLES
+#endif  // __FUNCTIONS
 
 //------------------------------------------------------------------------------
 // END

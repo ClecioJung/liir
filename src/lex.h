@@ -27,7 +27,6 @@
 #ifndef __LEX
 #define __LEX
 
-#include <stdlib.h>
 #include <stdbool.h>
 
 enum TokTypes {
@@ -35,7 +34,8 @@ enum TokTypes {
     TOK_UNARY_OPERATOR,  // -
     TOK_DELIMITER,       // ( and )
     TOK_NUMBER,
-    TOK_NAME,
+    TOK_VARIABLE,
+    TOK_FUNCTION,
 };
 
 struct String {
@@ -49,14 +49,15 @@ struct Token {
         char op;
         double number;
         struct String name;
+        int function_index;
     };
 };
 
 // Table used to save the list of tokens
 struct TokenList {
     struct Token *list;
-    size_t size;
-    size_t capacity;
+    int size;
+    int capacity;
 };
 
 void init_lex(void);

@@ -38,7 +38,7 @@
 
 static struct VariableList *variables = NULL;
 
-void resize_variable_list(const size_t size) {
+void resize_variable_list(const int size) {
     struct Variable *newList = (struct Variable *)realloc(
         variables->list, size * sizeof(struct Variable));
     if (newList == NULL) {
@@ -63,6 +63,8 @@ void init_variables(void) {
 void free_variables(void) {
     if (variables != NULL) {
         clear_variables();
+        free(variables->list);
+        variables->list = NULL;
         free(variables);
         variables = NULL;
     }
@@ -71,18 +73,17 @@ void free_variables(void) {
 // Deletes all variables
 void clear_variables(void) {
     if (variables != NULL) {
-        for (size_t i = 0; i < variables->size; i++) {
+        for (int i = 0; i < variables->size; i++) {
             free(variables->list[i].name);
             variables->list[i].name = NULL;
         }
-        free(variables->list);
-        variables->list = NULL;
+        variables->size = 0;
     }
 }
 
 // This function returns zero if found the variable in the list
 int search_variable(const char *const name, const unsigned int length,
-                    size_t *const index) {
+                    int *const index) {
     if (index == NULL) {
         return -1;
     }
@@ -92,8 +93,8 @@ int search_variable(const char *const name, const unsigned int length,
     }
     // Binary search in variables list
     *index = variables->size;  // middle
-    size_t low = 0;
-    size_t high = variables->size - 1;
+    int low = 0;
+    int high = variables->size - 1;
     int comp = -1;
     while (low <= high) {
         *index = (low + high) / 2;
@@ -109,14 +110,14 @@ int search_variable(const char *const name, const unsigned int length,
     return comp;
 }
 
-void new_variable(const size_t index, char *const name,
-                  const unsigned int length, const double value) {
+void new_variable(const int index, char *const name, const unsigned int length,
+                  const double value) {
     // Allocates more memory for the list, if necessary
     if (variables->size >= variables->capacitity) {
         resize_variable_list(2 * variables->capacitity);
     }
     // Moves variables down in the list to make space for the new variable
-    for (size_t i = variables->size; i > index; i--) {
+    for (int i = variables->size; i > index; i--) {
         variables->list[i].name = variables->list[i - 1].name;
         variables->list[i].value = variables->list[i - 1].value;
     }
@@ -133,7 +134,7 @@ void new_variable(const size_t index, char *const name,
 }
 
 double delete_variable(char *const name, const unsigned int length) {
-    size_t index;
+    int index;
     if (search_variable(name, length, &index) != 0) {
         return NAN;
     }
@@ -141,7 +142,7 @@ double delete_variable(char *const name, const unsigned int length) {
     const double value = variables->list[index].value;
     free(variables->list[index].name);
     variables->list[index].name = NULL;
-    for (size_t i = index; (i + 1) < variables->size; i++) {
+    for (int i = index; (i + 1) < variables->size; i++) {
         variables->list[i].name = variables->list[i + 1].name;
         variables->list[i].value = variables->list[i + 1].value;
     }
@@ -152,7 +153,7 @@ double delete_variable(char *const name, const unsigned int length) {
 
 double assign_variable(char *const name, const unsigned int length,
                        const double value) {
-    size_t index;
+    int index;
     const int search = search_variable(name, length, &index);
     if (search != 0) {
         // Insert new variable in alphabetical order
@@ -168,7 +169,7 @@ double assign_variable(char *const name, const unsigned int length,
 }
 
 double get_variable(const char *name, const unsigned int length) {
-    size_t index;
+    int index;
     if (search_variable(name, length, &index) != 0) {
         return NAN;
     }
@@ -181,7 +182,7 @@ unsigned int max_uint(const unsigned int a, const unsigned int b) {
 
 unsigned int longest_name_variables(void) {
     unsigned int length = 0;
-    for (size_t i = 0; i < variables->size; i++) {
+    for (int i = 0; i < variables->size; i++) {
         length = max_uint(length, strlen(variables->list[i].name));
     }
     return length;
@@ -196,11 +197,15 @@ void print_variables(void) {
         max_uint(longest_name_variables(), strlen(header));
     printf("List of variables:\n");
     printf("%-*s Value\n", max_length, header);
-    for (size_t i = 0; i < variables->size; i++) {
+    for (int i = 0; i < variables->size; i++) {
         printf("%-*s %lg\n", max_length, variables->list[i].name,
                variables->list[i].value);
     }
     printf("\n");
+}
+
+bool variable_list_is_empty(void) {
+    return (variables->size == 0);
 }
 
 //------------------------------------------------------------------------------
