@@ -211,11 +211,14 @@ const struct Function functions[] = {
 
 const int functions_quantity = (sizeof(functions) / sizeof(functions[0]));
 
-int search_function(const char *const name) {
+int search_function(const char *const name, const int length) {
     // Sequential search in the functions list
     for (int i = 0; i < functions_quantity; i++) {
-        if (!strncmp(name, functions[i].name, strlen(functions[i].name))) {
-            return i;
+        const int function_length = strlen(functions[i].name);
+        if (length == function_length) {
+            if (!strncmp(name, functions[i].name, length)) {
+                return i;
+            }
         }
     }
     // Didn't found the function in the list

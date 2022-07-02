@@ -152,11 +152,11 @@ static inline char *add_name(const char *const first, const int column) {
     while (isalpha(*end) || isdigit(*end) || *end == '_') {
         end++;
     }
-    const int function_index = search_function(first);
+    const int length = (end - first);
+    const int function_index = search_function(first, length);
     if (function_index < functions_quantity) {
         add_function(function_index, column);
     } else {
-        const int length = (end - first);
         add_variable(first, length, column);
     }
     return end;

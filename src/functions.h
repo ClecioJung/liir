@@ -42,7 +42,7 @@ struct Function {
 extern const struct Function functions[];
 extern const int functions_quantity;
 
-int search_function(const char *const name);
+int search_function(const char *const name, const int length);
 void print_functions(void);
 
 #endif  // __FUNCTIONS

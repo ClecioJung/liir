@@ -329,9 +329,14 @@ double evaluate(const struct Token_Node *const node,
                         *status = Eval_Error;
                         return NAN;
                     }
-                    return assign_variable(node->left->tok.name.string,
-                                           node->left->tok.name.length,
-                                           evaluate(node->right, status));
+                    const double result = evaluate(node->right, status);
+                    if (*status != Eval_Error) {
+                        return assign_variable(node->left->tok.name.string,
+                                               node->left->tok.name.length,
+                                               result);
+                    } else {
+                        return NAN;
+                    }
                 }
                 default:
                     print_column(node->tok.column);
