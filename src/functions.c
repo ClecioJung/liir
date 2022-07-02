@@ -83,108 +83,126 @@ double pi(const double arg) {
 const struct Function functions[] = {
     {
         .name = "exit",
+        .description = "Closes this process",
         .arity = 0,
         .return_value = false,
         .fn = &exit_func,
     },
     {
         .name = "clear",
+        .description = "clear all variables from memory",
         .arity = 0,
         .return_value = false,
         .fn = &clear_func,
     },
     {
         .name = "variables",
+        .description = "List all current variables",
         .arity = 0,
         .return_value = false,
         .fn = &variables_func,
     },
     {
         .name = "functions",
+        .description = "List all built-in functions",
         .arity = 0,
         .return_value = false,
         .fn = &functions_func,
     },
     {
         .name = "euler",
+        .description = "Returns the euler constant",
         .arity = 0,
         .return_value = true,
         .fn = &euler,
     },
     {
         .name = "pi",
+        .description = "Returns the pi constant",
         .arity = 0,
         .return_value = true,
         .fn = &pi,
     },
     {
         .name = "sqrt",
+        .description = "Returns the square root of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &sqrt,
     },
     {
         .name = "cbrt",
+        .description = "Returns the cubic root of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &cbrt,
     },
     {
         .name = "exp",
+        .description = "Returns the exponential of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &exp,
     },
     {
         .name = "ln",
+        .description = "Returns the natural logarithm of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &log,
     },
     {
         .name = "log10",
+        .description = "Returns the logarithm base 10 of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &log10,
     },
     {
         .name = "log2",
+        .description = "Returns the logarithm base 2 of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &log2,
     },
     {
         .name = "sin",
+        .description = "Returns the sine function of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &sin,
     },
     {
         .name = "cos",
+        .description = "Returns the cosine function of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &cos,
     },
     {
         .name = "tan",
+        .description = "Returns the tangent function of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &tan,
     },
     {
         .name = "asin",
+        .description = "Returns the inverse sine function of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &asin,
     },
     {
         .name = "acos",
+        .description = "Returns the inverse cosine function of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &acos,
     },
     {
         .name = "atan",
+        .description = "Returns the inverse tangent function of it's argument",
         .arity = 1,
         .return_value = true,
         .fn = &atan,
@@ -204,10 +222,23 @@ int search_function(const char *const name) {
     return functions_quantity;
 }
 
-void print_functions(void) {
-    printf("List of built-in functions:\n");
+static inline unsigned int longest_name_functions(void) {
+    unsigned int length = 0;
     for (int i = 0; i < functions_quantity; i++) {
-        printf("%s\n", functions[i].name);
+        length = max_uint(length, strlen(functions[i].name));
+    }
+    return length;
+}
+
+void print_functions(void) {
+    const char *const header = "Name";
+    const unsigned int max_length =
+        max_uint(longest_name_functions(), strlen(header));
+    printf("List of built-in functions:\n");
+    printf("%-*s Description\n", max_length, header);
+    for (int i = 0; i < functions_quantity; i++) {
+        printf("%-*s %s\n", max_length, functions[i].name,
+               functions[i].description);
     }
     printf("\n");
 }

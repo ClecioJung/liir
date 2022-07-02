@@ -66,6 +66,7 @@ void free_lex(void);
 struct TokenList *lex(const char *const line);
 void print_token(const struct Token tok);
 void print_tokens(const struct TokenList *tokens);
+unsigned int max_uint(const unsigned int a, const unsigned int b);
 
 #endif  // __LEX
 

@@ -175,11 +175,7 @@ double get_variable(const int index) {
     return variables->list[index].value;
 }
 
-unsigned int max_uint(const unsigned int a, const unsigned int b) {
-    return ((a > b) ? a : b);
-}
-
-unsigned int longest_name_variables(void) {
+static inline unsigned int longest_name_variables(void) {
     unsigned int length = 0;
     for (int i = 0; i < variables->size; i++) {
         length = max_uint(length, strlen(variables->list[i].name));

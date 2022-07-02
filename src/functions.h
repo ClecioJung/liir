@@ -33,6 +33,7 @@ typedef double (*Function_Pointer)(double arg);
 
 struct Function {
     char *name;
+    char *description;
     int arity;          // number of expected arguments (0, 1 or 2)
     bool return_value;  // the function returns a value?
     Function_Pointer fn;

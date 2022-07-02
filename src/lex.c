@@ -245,6 +245,10 @@ void print_tokens(const struct TokenList *tokens) {
     printf("\n");
 }
 
+unsigned int max_uint(const unsigned int a, const unsigned int b) {
+    return ((a > b) ? a : b);
+}
+
 //------------------------------------------------------------------------------
 // END
 //------------------------------------------------------------------------------
