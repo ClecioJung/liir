@@ -36,9 +36,16 @@ struct Token_Node {
     struct Token_Node *right;
 };
 
+// Enumeration used to track the status of the evaluation phase
+enum Evaluation_Status {
+    Eval_OK = 0,
+    Eval_Dont_Print,
+    Eval_Error,
+};
+
 void free_tree(const struct Token_Node *const node);
 struct Token_Node *parser(const struct TokenList *const tokens);
-double evaluate(const struct Token_Node *const node);
+double evaluate(const struct Token_Node *const node, enum Evaluation_Status *const status);
 void print_tree(const struct Token_Node *const head);
 
 #endif  // __PARSER

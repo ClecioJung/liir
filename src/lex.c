@@ -78,51 +78,66 @@ void add_token(const struct Token tok) {
     tokens->size++;
 }
 
-static inline void add_op(const char op) {
+static inline void add_op(const char op, const int column) {
     struct Token tok = (struct Token){
         .type = TOK_OPERATOR,
+        .column = column,
         .op = op,
     };
     // Unary operator
     if ((op == '-') && (tokens->size > 0)) {
         const struct Token last_token = tokens->list[tokens->size - 1];
-        if (is_operator(last_token)) {
+        if ((last_token.type == TOK_OPERATOR) ||
+            (last_token.type == TOK_UNARY_OPERATOR) ||
+            (last_token.type == TOK_DELIMITER)) {
             tok.type = TOK_UNARY_OPERATOR;
+        } else if ((last_token.type == TOK_FUNCTION) &&
+                   (functions[last_token.function_index].arity >= 1)) {
+            tok.type = TOK_UNARY_OPERATOR;
+            print_column(last_token.column);
+            print_warning(
+                "Consider using parentheses to pass arguments to functions, so "
+                "ambiguities are avoided!\n");
         }
     }
     add_token(tok);
 }
 
-static inline void add_delimiter(const char delimiter) {
+static inline void add_delimiter(const char delimiter, const int column) {
     struct Token tok = (struct Token){
         .type = TOK_DELIMITER,
+        .column = column,
         .op = delimiter,
     };
     add_token(tok);
 }
 
-static inline char *add_number(const char *const first) {
+static inline char *add_number(const char *const first, const int column) {
     char *end = (char *)first;
     double number = strtod(first, &end);
     struct Token tok = {
         .type = TOK_NUMBER,
+        .column = column,
         .number = number,
     };
     add_token(tok);
     return end;
 }
 
-static inline void add_function(const int index) {
+static inline void add_function(const int index, const int column) {
     struct Token tok = {
         .type = TOK_FUNCTION,
+        .column = column,
         .function_index = index,
     };
     add_token(tok);
 }
 
-static inline void add_variable(const char *const name, const int length) {
+static inline void add_variable(const char *const name, const int length,
+                                const int column) {
     struct Token tok = {
         .type = TOK_VARIABLE,
+        .column = column,
         .name =
             {
                 .string = (char *)name,
@@ -132,17 +147,17 @@ static inline void add_variable(const char *const name, const int length) {
     add_token(tok);
 }
 
-static inline char *add_name(const char *const first) {
+static inline char *add_name(const char *const first, const int column) {
     char *end = (char *)first;
     while (isalpha(*end) || isdigit(*end) || *end == '_') {
         end++;
     }
     const int function_index = search_function(first);
     if (function_index < functions_quantity) {
-        add_function(function_index);
+        add_function(function_index, column);
     } else {
         const int length = (end - first);
-        add_variable(first, length);
+        add_variable(first, length, column);
     }
     return end;
 }
@@ -152,10 +167,10 @@ struct TokenList *lex(const char *const line) {
     const char *c = line;
     while (*c != '\0') {
         if (isdigit(*c) || *c == '.') {
-            c = add_number(c);
+            c = add_number(c, (c - line));
             continue;
         } else if (isalpha(*c) || *c == '_') {
-            c = add_name(c);
+            c = add_name(c, (c - line));
             continue;
         } else if (isspace(*c)) {
             c++;
@@ -168,17 +183,18 @@ struct TokenList *lex(const char *const line) {
             case '/':
             case '^':
             case '=': {
-                add_op(*c);
+                add_op(*c, (c - line));
                 c++;
                 break;
             }
             case '(':
             case ')': {
-                add_delimiter(*c);
+                add_delimiter(*c, (c - line));
                 c++;
                 break;
             }
             default: {
+                print_column(c - line);
                 print_error("Unrecognized character at lexical analysis: %s\n",
                             c);
                 return NULL;
@@ -186,10 +202,6 @@ struct TokenList *lex(const char *const line) {
         }
     }
     return tokens;
-}
-
-bool is_operator(const struct Token tok) {
-    return ((tok.type == TOK_OPERATOR) || (tok.type == TOK_UNARY_OPERATOR));
 }
 
 void print_token(const struct Token tok) {

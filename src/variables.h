@@ -51,7 +51,7 @@ void new_variable(const int index, char *const name, const unsigned int length,
 double assign_variable(char *const name, const unsigned int length,
                        const double value);
 double delete_variable(char *const name, const unsigned int length);
-double get_variable(const char *const name, const unsigned int length);
+double get_variable(const int index);
 void print_variables(void);
 bool variable_list_is_empty(void);
 

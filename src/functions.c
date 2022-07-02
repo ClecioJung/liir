@@ -189,42 +189,6 @@ const struct Function functions[] = {
         .return_value = true,
         .fn = &atan,
     },
-    {
-        .name = "sinh",
-        .arity = 1,
-        .return_value = true,
-        .fn = &sinh,
-    },
-    {
-        .name = "cosh",
-        .arity = 1,
-        .return_value = true,
-        .fn = &cosh,
-    },
-    {
-        .name = "tanh",
-        .arity = 1,
-        .return_value = true,
-        .fn = &tanh,
-    },
-    {
-        .name = "asinh",
-        .arity = 1,
-        .return_value = true,
-        .fn = &asinh,
-    },
-    {
-        .name = "acosh",
-        .arity = 1,
-        .return_value = true,
-        .fn = &acosh,
-    },
-    {
-        .name = "atanh",
-        .arity = 1,
-        .return_value = true,
-        .fn = &atanh,
-    },
 };
 
 const int functions_quantity = (sizeof(functions) / sizeof(functions[0]));

@@ -168,9 +168,8 @@ double assign_variable(char *const name, const unsigned int length,
     return value;
 }
 
-double get_variable(const char *name, const unsigned int length) {
-    int index;
-    if (search_variable(name, length, &index) != 0) {
+double get_variable(const int index) {
+    if ((index < 0) || (index > variables->size)) {
         return NAN;
     }
     return variables->list[index].value;

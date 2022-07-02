@@ -68,6 +68,67 @@ struct Token_Node *new_node(const struct Token tok) {
     return node;
 }
 
+static inline bool check_parser_right_error(
+    const struct Token_Node *const previous,
+    const struct Token_Node *const current_node) {
+    if ((previous->tok.type == TOK_NUMBER) ||
+        (previous->tok.type == TOK_VARIABLE)) {
+        if (current_node->tok.type == TOK_NUMBER) {
+            print_column(current_node->tok.column);
+            print_error(
+                "Unexpected number! Check for missing operator, missing or "
+                "unbalanced delimiters, or other syntax error.\n");
+            return true;
+        }
+        if (current_node->tok.type == TOK_VARIABLE) {
+            print_column(current_node->tok.column);
+            print_error(
+                "Unexpected variable! Check for missing operator, missing "
+                "or unbalanced delimiters, or other syntax error.\n");
+            return true;
+        }
+        if (current_node->tok.type == TOK_FUNCTION) {
+            print_column(current_node->tok.column);
+            print_error(
+                "Unexpected function! Check for missing operator, missing "
+                "or unbalanced delimiters, or other syntax error.\n");
+            return true;
+        }
+    }
+    if (previous->tok.type == TOK_FUNCTION) {
+        if (functions[previous->tok.function_index].arity == 0) {
+            if ((current_node->tok.type == TOK_NUMBER) ||
+                (current_node->tok.type == TOK_VARIABLE)) {
+                print_column(current_node->tok.column);
+                print_warning("The function \"%s\" accepts no argument!\n",
+                              functions[previous->tok.function_index].name);
+            }
+        }
+        if (current_node->tok.type == TOK_OPERATOR) {
+            if (!functions[previous->tok.function_index].return_value) {
+                print_column(previous->tok.column);
+                print_error(
+                    "The function \"%s\" returns no value, so it can't be used "
+                    "in a expression!\n",
+                    functions[previous->tok.function_index].name);
+                return true;
+            }
+        }
+    }
+    if (previous->tok.type == TOK_OPERATOR) {
+        if ((current_node->tok.type == TOK_FUNCTION) &&
+            (!functions[current_node->tok.function_index].return_value)) {
+            print_column(current_node->tok.column);
+            print_error(
+                "The function \"%s\" returns no value, so it can't be used in "
+                "a expression!\n",
+                functions[current_node->tok.function_index].name);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool insert_node_right(struct Token_Node **const head,
                        struct Token_Node *const node) {
     if (*head == NULL) {
@@ -77,14 +138,8 @@ bool insert_node_right(struct Token_Node **const head,
         while (previous->right != NULL) {
             previous = previous->right;
         }
-        if ((previous->tok.type == TOK_NUMBER) ||
-            (previous->tok.type == TOK_VARIABLE)) {
-            if ((node->tok.type == TOK_NUMBER) ||
-                (node->tok.type == TOK_VARIABLE) ||
-                (node->tok.type == TOK_FUNCTION)) {
-                print_error("Invalid expression!\n");
-                return false;
-            }
+        if (check_parser_right_error(previous, node)) {
+            return false;
         }
         previous->right = node;
     }
@@ -131,7 +186,8 @@ struct Token_Node *parse_parentheses(const struct TokenList *const tokens,
     struct Token_Node *head = NULL;
     while ((*tkIndex < tokens->size) && (tokens->list[*tkIndex].op != ')')) {
         bool ok = true;
-        if (tokens->list[*tkIndex].op == '(') {
+        const struct Token current_token = tokens->list[*tkIndex];
+        if (current_token.op == '(') {
             (*tkIndex)++;
             struct Token_Node *const node = parse_parentheses(tokens, tkIndex);
             ok = insert_node_right(&head, node);
@@ -139,17 +195,20 @@ struct Token_Node *parse_parentheses(const struct TokenList *const tokens,
                 free(node);
             }
             if (*tkIndex >= tokens->size) {
-                print_error("Too many opening parentheses!\n");
+                print_column(current_token.column);
+                print_error(
+                    "Mismatched delimiters! Not all parentheses were "
+                    "closed!\n");
                 ok = false;
             }
-        } else if (tokens->list[*tkIndex].type == TOK_OPERATOR) {
-            struct Token_Node *const node = new_node(tokens->list[*tkIndex]);
+        } else if (current_token.type == TOK_OPERATOR) {
+            struct Token_Node *const node = new_node(current_token);
             ok = insert_new_op(&head, node);
             if (!ok) {
                 free(node);
             }
         } else {
-            struct Token_Node *const node = new_node(tokens->list[*tkIndex]);
+            struct Token_Node *const node = new_node(current_token);
             ok = insert_node_right(&head, node);
             if (!ok) {
                 free(node);
@@ -172,52 +231,134 @@ struct Token_Node *parser(const struct TokenList *const tokens) {
     int tkIndex = 0;
     struct Token_Node *head = parse_parentheses(tokens, &tkIndex);
     if ((tkIndex < tokens->size) && (tokens->list[tkIndex].op == ')')) {
-        print_error("Too many closing parentheses!\n");
+        print_column(tokens->list[tkIndex].column);
+        print_error("Mismatched delimiters! Unexpected closing parentheses!\n");
         free_tree(head);
         head = NULL;
     }
     return head;
 }
 
-double evaluate(const struct Token_Node *const node) {
+double evaluate(const struct Token_Node *const node,
+                enum Evaluation_Status *const status) {
     if (node == NULL) {
+        return NAN;
+    }
+    if ((status == NULL) || (*status == Eval_Error)) {
         return NAN;
     }
     switch (node->tok.type) {
         case TOK_OPERATOR:
             switch (node->tok.op) {
                 case '+':
-                    return (evaluate(node->left) + evaluate(node->right));
+                    if ((node->left == NULL) || (node->right == NULL)) {
+                        print_column(node->tok.column);
+                        print_warning(
+                            "Did you forget to include a operand for the "
+                            "operator \"%c\"?\n",
+                            node->tok.op);
+                        return NAN;
+                    }
+                    return (evaluate(node->left, status) +
+                            evaluate(node->right, status));
                 case '-':
-                    return (evaluate(node->left) - evaluate(node->right));
+                    if ((node->left == NULL) || (node->right == NULL)) {
+                        print_column(node->tok.column);
+                        print_warning(
+                            "Did you forget to include a operand for the "
+                            "operator \"%c\"?\n",
+                            node->tok.op);
+                        return NAN;
+                    }
+                    return (evaluate(node->left, status) -
+                            evaluate(node->right, status));
                 case '*':
-                    return (evaluate(node->left) * evaluate(node->right));
+                    if ((node->left == NULL) || (node->right == NULL)) {
+                        print_column(node->tok.column);
+                        print_warning(
+                            "Did you forget to include a operand for the "
+                            "operator \"%c\"?\n",
+                            node->tok.op);
+                        return NAN;
+                    }
+                    return (evaluate(node->left, status) *
+                            evaluate(node->right, status));
                 case '/':
-                    return (evaluate(node->left) / evaluate(node->right));
+                    if ((node->left == NULL) || (node->right == NULL)) {
+                        print_column(node->tok.column);
+                        print_warning(
+                            "Did you forget to include a operand for the "
+                            "operator \"%c\"?\n",
+                            node->tok.op);
+                        return NAN;
+                    }
+                    return (evaluate(node->left, status) /
+                            evaluate(node->right, status));
                 case '^':
-                    return pow(evaluate(node->left), evaluate(node->right));
+                    if ((node->left == NULL) || (node->right == NULL)) {
+                        print_column(node->tok.column);
+                        print_warning(
+                            "Did you forget to include a operand for the "
+                            "operator \"%c\"?\n",
+                            node->tok.op);
+                        return NAN;
+                    }
+                    return pow(evaluate(node->left, status),
+                               evaluate(node->right, status));
                 case '=': {
+                    if ((node->left == NULL) || (node->right == NULL)) {
+                        print_column(node->tok.column);
+                        print_warning(
+                            "Did you forget to include a operand for the "
+                            "operator \"%c\"?\n",
+                            node->tok.op);
+                        return NAN;
+                    }
+                    if (node->left->tok.type == TOK_FUNCTION) {
+                        print_column(node->left->tok.column);
+                        print_error(
+                            "Cannot create a variable named \"%s\", because "
+                            "already exists a function with this name!\n",
+                            functions[node->left->tok.function_index].name);
+                        *status = Eval_Error;
+                        return NAN;
+                    }
                     if (node->left->tok.type != TOK_VARIABLE) {
+                        print_column(node->left->tok.column);
                         print_error("Expected variable name for atribution!\n");
+                        *status = Eval_Error;
                         return NAN;
                     }
                     return assign_variable(node->left->tok.name.string,
                                            node->left->tok.name.length,
-                                           evaluate(node->right));
+                                           evaluate(node->right, status));
                 }
                 default:
-                    print_error("Invalid operator at evaluation phase: %c\n",
-                                node->tok.op);
+                    print_column(node->tok.column);
+                    print_error(
+                        "Invalid binary operator at evaluation phase: %c\n",
+                        node->tok.op);
+                    *status = Eval_Error;
                     return NAN;
             }
         case TOK_UNARY_OPERATOR:
             switch (node->tok.op) {
                 case '-':
-                    return (-evaluate(node->right));
+                    if (node->right == NULL) {
+                        print_column(node->tok.column);
+                        print_warning(
+                            "Did you forget to include a operand for the "
+                            "operator \"%c\"?\n",
+                            node->tok.op);
+                        return NAN;
+                    }
+                    return (-evaluate(node->right, status));
                 default:
+                    print_column(node->tok.column);
                     print_error(
                         "Invalid unary operator at evaluation phase: %c\n",
                         node->tok.op);
+                    *status = Eval_Error;
                     return NAN;
             }
         case TOK_NUMBER:
@@ -226,25 +367,48 @@ double evaluate(const struct Token_Node *const node) {
             const struct Function function =
                 functions[node->tok.function_index];
             if (function.fn == NULL) {
+                print_column(node->tok.column);
+                print_error(
+                    "The function \"%s\" was not properly initialized!\n",
+                    function.name);
+                *status = Eval_Error;
                 return NAN;
             }
-            switch (function.arity) {
-                case 1:
-                    return function.fn(evaluate(node->right));
-                case 0:
-                default:
-                    return function.fn(NAN);
+            if ((function.arity >= 1) && (node->right == NULL)) {
+                print_column(node->tok.column);
+                print_warning(
+                    "Did you forget to pass a argument to the function "
+                    "\"%s\"?\n",
+                    function.name);
             }
+            if ((!function.return_value) && (*status != Eval_Error)) {
+                *status = Eval_Dont_Print;
+            }
+            return function.fn(evaluate(node->right, status));
         }
-        case TOK_VARIABLE:
-            return get_variable(node->tok.name.string, node->tok.name.length);
+        case TOK_VARIABLE: {
+            int index;
+            if (search_variable(node->tok.name.string, node->tok.name.length,
+                                &index) != 0) {
+                print_column(node->tok.column);
+                print_error("Unrecognized name: \"%.*s\"!\n",
+                            node->tok.name.length, node->tok.name.string);
+                *status = Eval_Error;
+                return NAN;
+            }
+            return get_variable(index);
+        }
         case TOK_DELIMITER:
+            print_column(node->tok.column);
             print_error("Unexpected delimiter at evaluation phase: %c\n",
                         node->tok.op);
+            *status = Eval_Error;
             return NAN;
         default:
+            print_column(node->tok.column);
             print_error("Invalid token at evaluation phase: %c\n",
                         node->tok.op);
+            *status = Eval_Error;
             return NAN;
     }
 }

@@ -27,10 +27,6 @@
 #ifndef __PRINT_ERRORS
 #define __PRINT_ERRORS
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef __GNUC__
 #define __attribute__(a)
 #endif
@@ -41,10 +37,7 @@ void print_error(const char *const msg, ...)
     __attribute__((format(printf, 1, 2)));
 void print_warning(const char *const msg, ...)
     __attribute__((format(printf, 1, 2)));
-
-#ifdef __cplusplus
-}
-#endif
+void print_column(const int column);
 
 #endif  // __PRINT_ERRORS
 

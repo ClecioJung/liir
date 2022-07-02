@@ -45,7 +45,9 @@
 
 static int actions = 0;
 
-void exit_repl(void) { actions |= ACTION_EXIT; }
+void exit_repl(void) {
+    actions |= ACTION_EXIT;
+}
 
 void repl(const char *const line) {
     struct TokenList *tokens = lex(line);
@@ -56,7 +58,11 @@ void repl(const char *const line) {
     if (head == NULL) {
         return;
     }
-    printf("%lg\n\n", evaluate(head));
+    enum Evaluation_Status status = Eval_OK;
+    const double result = evaluate(head, &status);
+    if (status == Eval_OK) {
+        printf("%lg\n", result);
+    }
     if (actions & ACTION_PRINT_TOKENS) {
         print_tokens(tokens);
     }

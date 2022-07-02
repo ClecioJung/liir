@@ -45,6 +45,7 @@ struct String {
 
 struct Token {
     enum TokTypes type;
+    int column;
     union {
         char op;
         double number;
@@ -63,7 +64,6 @@ struct TokenList {
 void init_lex(void);
 void free_lex(void);
 struct TokenList *lex(const char *const line);
-bool is_operator(const struct Token tok);
 void print_token(const struct Token tok);
 void print_tokens(const struct TokenList *tokens);
 
