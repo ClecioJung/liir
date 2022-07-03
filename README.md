@@ -45,9 +45,13 @@ This project posseses the following characteristics:
 
 ## Usage
 
-Download this project and compile it by typing the command `make` in its folder. Next, just run the executable `./liir`. Here is an example:
+Download this project and compile it by typing the command `make` in its folder. Next, just run the executable `./liir`:
 
 ```console
 $ make
 $ ./liir
 ```
+
+To use it, just type the expression you want to evaluate and then press enter. Here is an example of usage:
+
+![usage](./usage.png)
