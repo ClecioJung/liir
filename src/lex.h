@@ -28,8 +28,9 @@
 #define __LEX
 
 #include <stdbool.h>
+#include <stdlib.h>
 
-enum TokTypes {
+enum Tok_Types {
     TOK_OPERATOR,        // +, -, *, /, ^ and =
     TOK_UNARY_OPERATOR,  // -
     TOK_DELIMITER,       // ( and )
@@ -44,7 +45,7 @@ struct String {
 };
 
 struct Token {
-    enum TokTypes type;
+    enum Tok_Types type;
     int column;
     union {
         char op;
@@ -55,18 +56,20 @@ struct Token {
 };
 
 // Table used to save the list of tokens
-struct TokenList {
+struct Token_List {
     struct Token *list;
-    int size;
-    int capacity;
+    size_t size;
+    size_t capacity;
 };
 
 void init_lex(void);
 void free_lex(void);
-struct TokenList *lex(const char *const line);
+int lex(const char *const line);
 void print_token(const struct Token tok);
-void print_tokens(const struct TokenList *tokens);
+void print_tokens(void);
 unsigned int max_uint(const unsigned int a, const unsigned int b);
+
+extern struct Token_List tokens;
 
 #endif  // __LEX
 

@@ -40,13 +40,7 @@
 #endif
 
 // Defined on main.c
-void exit_repl(void);
-
-double exit_func(const double arg) {
-    (void)arg;
-    exit_repl();
-    return NAN;
-}
+extern double exit_func(const double arg);
 
 double clear_func(const double arg) {
     (void)arg;
@@ -235,13 +229,11 @@ static inline unsigned int longest_name_functions(void) {
 
 void print_functions(void) {
     const char *const header = "Name";
-    const unsigned int max_length =
-        max_uint(longest_name_functions(), strlen(header));
+    const unsigned int max_length = max_uint(longest_name_functions(), strlen(header));
     printf("List of built-in functions:\n");
     printf("%-*s Description\n", max_length, header);
     for (int i = 0; i < functions_quantity; i++) {
-        printf("%-*s %s\n", max_length, functions[i].name,
-               functions[i].description);
+        printf("%-*s %s\n", max_length, functions[i].name, functions[i].description);
     }
     printf("\n");
 }

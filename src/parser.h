@@ -44,7 +44,7 @@ enum Evaluation_Status {
 };
 
 void free_tree(const struct Token_Node *const node);
-struct Token_Node *parser(const struct TokenList *const tokens);
+struct Token_Node *parser(void);
 double evaluate(const struct Token_Node *const node, enum Evaluation_Status *const status);
 void print_tree(const struct Token_Node *const head);
 
