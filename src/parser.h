@@ -27,13 +27,22 @@
 #ifndef __PARSER
 #define __PARSER
 
+#include <stdint.h>
+
 #include "lex.h"
 
 // Nodes of the abstract syntax tree (AST)
 struct Token_Node {
     struct Token tok;
-    struct Token_Node *left;
-    struct Token_Node *right;
+    int64_t left_idx;
+    int64_t right_idx;
+};
+
+// Structure used to save the nodes of the AST
+struct Tree {
+    struct Token_Node *nodes;
+    int size;
+    int capacitity;
 };
 
 // Enumeration used to track the status of the evaluation phase
@@ -43,10 +52,11 @@ enum Evaluation_Status {
     Eval_Error,
 };
 
-void free_tree(const struct Token_Node *const node);
-struct Token_Node *parser(void);
-double evaluate(const struct Token_Node *const node, enum Evaluation_Status *const status);
-void print_tree(const struct Token_Node *const head);
+void init_parser(void);
+void free_parser(void);
+int64_t parser(void);
+double evaluate(const int64_t node_idx, enum Evaluation_Status *const status);
+void print_tree(const int64_t head_idx);
 
 #endif  // __PARSER
 

@@ -136,25 +136,24 @@ void repl(const char *const line) {
     if (lex(line) == EXIT_FAILURE) {
         return;
     }
-    struct Token_Node *head = parser();
-    if (head == NULL) {
-        return;
+    int64_t head_idx = parser();
+    if (head_idx >= 0) {
+        enum Evaluation_Status status = Eval_OK;
+        const double result = evaluate(head_idx, &status);
+        if (status == Eval_OK) {
+            printf("%lg\n", result);
+        }
     }
-    enum Evaluation_Status status = Eval_OK;
-    const double result = evaluate(head, &status);
-    if (status == Eval_OK) {
-        printf("%lg\n", result);
-    }
+    printf("\n");
     if (actions & ACTION_PRINT_TOKENS) {
         print_tokens();
     }
-    if (actions & ACTION_PRINT_TREE) {
-        print_tree(head);
+    if ((head_idx >= 0) && (actions & ACTION_PRINT_TREE)) {
+        print_tree(head_idx);
     }
     if (actions & ACTION_PRINT_VARIABLES) {
         print_variables();
     }
-    free_tree(head);
 }
 
 //------------------------------------------------------------------------------
@@ -165,12 +164,16 @@ int main(const int argc, const char *const argv[]) {
     if (parse_arguments(argc, argv) == EXIT_FAILURE) {
         return EXIT_FAILURE;
     }
+    if ((actions & ACTION_EXIT) != 0) {
+        return EXIT_SUCCESS;
+    }
     // Pre-allocates memory for the line buffer
     size_t len = 128;
     char *line = malloc(len * sizeof(char));
     if (line == NULL) {
         print_crash_and_exit("Couldn't allocate memory for the line buffer!\n");
     }
+    init_parser();
     init_lex();
     init_variables();
     while ((actions & ACTION_EXIT) == 0) {
@@ -181,8 +184,9 @@ int main(const int argc, const char *const argv[]) {
         }
         repl(line);
     }
-    free_lex();
     free_variables();
+    free_lex();
+    free_parser();
     free(line);
     return EXIT_SUCCESS;
 }
