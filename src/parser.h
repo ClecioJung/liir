@@ -54,7 +54,7 @@ enum Evaluation_Status {
 
 void init_parser(void);
 void free_parser(void);
-int64_t parser(void);
+int64_t parser(struct Lexer *const lexer);
 double evaluate(const int64_t node_idx, enum Evaluation_Status *const status);
 void print_tree(const int64_t head_idx);
 

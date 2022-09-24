@@ -132,30 +132,6 @@ double exit_func(const double arg) {
     return NAN;
 }
 
-void repl(const char *const line) {
-    if (lex(line) == EXIT_FAILURE) {
-        return;
-    }
-    int64_t head_idx = parser();
-    if (head_idx >= 0) {
-        enum Evaluation_Status status = Eval_OK;
-        const double result = evaluate(head_idx, &status);
-        if (status == Eval_OK) {
-            printf("%lg\n", result);
-        }
-    }
-    printf("\n");
-    if (actions & ACTION_PRINT_TOKENS) {
-        print_tokens();
-    }
-    if ((head_idx >= 0) && (actions & ACTION_PRINT_TREE)) {
-        print_tree(head_idx);
-    }
-    if (actions & ACTION_PRINT_VARIABLES) {
-        print_variables();
-    }
-}
-
 //------------------------------------------------------------------------------
 // MAIN
 //------------------------------------------------------------------------------
@@ -173,8 +149,8 @@ int main(const int argc, const char *const argv[]) {
     if (line == NULL) {
         print_crash_and_exit("Couldn't allocate memory for the line buffer!\n");
     }
+    struct Lexer lexer = create_lex(64);
     init_parser();
-    init_lex();
     init_variables();
     while ((actions & ACTION_EXIT) == 0) {
         printf("> ");
@@ -182,10 +158,30 @@ int main(const int argc, const char *const argv[]) {
         if (getline(&line, &len, stdin) == -1) {
             print_crash_and_exit("Couldn't get line from stdin!\n");
         }
-        repl(line);
+        if (lex(&lexer, line) == EXIT_FAILURE) {
+            return EXIT_FAILURE;
+        }
+        int64_t head_idx = parser(&lexer);
+        if (head_idx >= 0) {
+            enum Evaluation_Status status = Eval_OK;
+            const double result = evaluate(head_idx, &status);
+            if (status == Eval_OK) {
+                printf("%lg\n", result);
+            }
+        }
+        printf("\n");
+        if (actions & ACTION_PRINT_TOKENS) {
+            print_tokens(&lexer);
+        }
+        if ((head_idx >= 0) && (actions & ACTION_PRINT_TREE)) {
+            print_tree(head_idx);
+        }
+        if (actions & ACTION_PRINT_VARIABLES) {
+            print_variables();
+        }
     }
+    destroy_lex(&lexer);
     free_variables();
-    free_lex();
     free_parser();
     free(line);
     return EXIT_SUCCESS;

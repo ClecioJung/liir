@@ -32,50 +32,36 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "allocator.h"
 #include "functions.h"
 #include "print_errors.h"
 
-static const size_t initial_token_list_size = 64;
-
-struct Token_List tokens = {0};
-
-void resize_token_list(const size_t size) {
-    struct Token *newList = (struct Token *)realloc(tokens.list, size * sizeof(struct Token));
-    if (newList == NULL) {
-        free_lex();
-        print_crash_and_exit("Could't reallocate memory for the lexer!\n");
-    }
-    tokens.list = newList;
-    tokens.capacity = size;
+struct Lexer create_lex(const size_t initial_size) {
+    struct Lexer lexer = (struct Lexer) {
+        .tokens = allocator_construct(sizeof(struct Token), initial_size),
+    };
+    return lexer;
 }
 
-void init_lex(void) {
-    resize_token_list(initial_token_list_size);
+void destroy_lex(struct Lexer *const lexer) {
+    allocator_delete(&lexer->tokens);
 }
 
-void free_lex(void) {
-    free(tokens.list);
-    tokens.list = NULL;
+void add_token(struct Lexer *const lexer, const struct Token tok) {
+    int64_t index = allocator_new(&lexer->tokens);
+    struct Token *const token = allocator_get(lexer->tokens, index);
+    *token = tok;
 }
 
-void add_token(const struct Token tok) {
-    // Allocates more memory if necessary
-    if (tokens.size >= tokens.capacity) {
-        resize_token_list(2 * tokens.capacity);
-    }
-    tokens.list[tokens.size] = tok;
-    tokens.size++;
-}
-
-static inline void add_op(const char op, const int column) {
+static inline void add_op(struct Lexer *const lexer, const char op, const int column) {
     struct Token tok = (struct Token){
         .type = TOK_OPERATOR,
         .column = column,
         .op = op,
     };
     // Unary operator
-    if ((op == '-') && (tokens.size > 0)) {
-        const struct Token last_token = tokens.list[tokens.size - 1];
+    if ((op == '-') && (lexer->tokens.size > 0)) {
+        const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
         if ((last_token.type == TOK_OPERATOR) ||
             (last_token.type == TOK_UNARY_OPERATOR) ||
             (last_token.type == TOK_DELIMITER)) {
@@ -86,19 +72,19 @@ static inline void add_op(const char op, const int column) {
             print_warning("Consider using parentheses to pass arguments to functions, so ambiguities are avoided!\n");
         }
     }
-    add_token(tok);
+    add_token(lexer, tok);
 }
 
-static inline void add_delimiter(const char delimiter, const int column) {
+static inline void add_delimiter(struct Lexer *const lexer, const char delimiter, const int column) {
     struct Token tok = (struct Token){
         .type = TOK_DELIMITER,
         .column = column,
         .op = delimiter,
     };
-    add_token(tok);
+    add_token(lexer, tok);
 }
 
-static inline char *add_number(const char *const first, const int column) {
+static inline char *add_number(struct Lexer *const lexer, const char *const first, const int column) {
     char *end = (char *)first;
     double number = strtod(first, &end);
     struct Token tok = {
@@ -106,20 +92,20 @@ static inline char *add_number(const char *const first, const int column) {
         .column = column,
         .number = number,
     };
-    add_token(tok);
+    add_token(lexer, tok);
     return end;
 }
 
-static inline void add_function(const int index, const int column) {
+static inline void add_function(struct Lexer *const lexer, const int index, const int column) {
     struct Token tok = {
         .type = TOK_FUNCTION,
         .column = column,
         .function_index = index,
     };
-    add_token(tok);
+    add_token(lexer, tok);
 }
 
-static inline void add_variable(const char *const name, const int length, const int column) {
+static inline void add_variable(struct Lexer *const lexer, const char *const name, const int length, const int column) {
     struct Token tok = {
         .type = TOK_VARIABLE,
         .column = column,
@@ -128,10 +114,10 @@ static inline void add_variable(const char *const name, const int length, const 
             .length = length,
         },
     };
-    add_token(tok);
+    add_token(lexer, tok);
 }
 
-static inline char *add_name(const char *const first, const int column) {
+static inline char *add_name(struct Lexer *const lexer, const char *const first, const int column) {
     char *end = (char *)first;
     while (isalpha(*end) || isdigit(*end) || *end == '_') {
         end++;
@@ -139,22 +125,22 @@ static inline char *add_name(const char *const first, const int column) {
     const int length = (end - first);
     const int function_index = search_function(first, length);
     if (function_index < functions_quantity) {
-        add_function(function_index, column);
+        add_function(lexer, function_index, column);
     } else {
-        add_variable(first, length, column);
+        add_variable(lexer, first, length, column);
     }
     return end;
 }
 
-int lex(const char *const line) {
-    tokens.size = 0;
+int lex(struct Lexer *const lexer, const char *const line) {
+    allocator_free_all(&lexer->tokens);
     const char *c = line;
     while (*c != '\0') {
         if (isdigit(*c) || *c == '.') {
-            c = add_number(c, (c - line));
+            c = add_number(lexer, c, (c - line));
             continue;
         } else if (isalpha(*c) || *c == '_') {
-            c = add_name(c, (c - line));
+            c = add_name(lexer, c, (c - line));
             continue;
         } else if (isspace(*c)) {
             c++;
@@ -167,13 +153,13 @@ int lex(const char *const line) {
             case '/':
             case '^':
             case '=': {
-                add_op(*c, (c - line));
+                add_op(lexer, *c, (c - line));
                 c++;
                 break;
             }
             case '(':
             case ')': {
-                add_delimiter(*c, (c - line));
+                add_delimiter(lexer, *c, (c - line));
                 c++;
                 break;
             }
@@ -216,14 +202,14 @@ void print_token(const struct Token tok) {
     }
 }
 
-void print_tokens(void) {
-    if (tokens.size == 0) {
+void print_tokens(struct Lexer *const lexer) {
+    if (lexer->tokens.size == 0) {
         return;
     }
     printf("List of tokens generated by lexical analysis:\n");
     printf("Token     Value\n");
-    for (size_t tk_idx = 0; tk_idx < tokens.size; tk_idx++) {
-        print_token(tokens.list[tk_idx]);
+    for (size_t tk_idx = 0; tk_idx < lexer->tokens.size; tk_idx++) {
+        print_token(((struct Token *)lexer->tokens.data)[tk_idx]);
     }
     printf("\n");
 }

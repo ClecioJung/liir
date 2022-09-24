@@ -208,22 +208,22 @@ bool insert_new_op(int64_t *const head_idx, const int64_t node_idx, const int64_
     return false;
 }
 
-int64_t parse_parentheses(size_t *const tk_idx) {
+int64_t parse_parentheses(struct Lexer *const lexer, size_t *const tk_idx) {
     if (tk_idx == NULL) {
         print_crash_and_exit("Invalid call to function \"parse_parentheses()\"!\n");
         return -1;
     }
     int64_t head_idx = -1;
     int64_t last_parentheses_idx = -1;
-    while ((*tk_idx < tokens.size) && (tokens.list[*tk_idx].op != ')')) {
-        const struct Token current_token = tokens.list[*tk_idx];
+    while ((*tk_idx < lexer->tokens.size) && (((struct Token *)lexer->tokens.data)[*tk_idx].op != ')')) {
+        const struct Token current_token = ((struct Token *)lexer->tokens.data)[*tk_idx];
         if (current_token.op == '(') {
             (*tk_idx)++;
-            last_parentheses_idx = parse_parentheses(tk_idx);
+            last_parentheses_idx = parse_parentheses(lexer, tk_idx);
             if (insert_node_right(&head_idx, last_parentheses_idx)) {
                 return -1;
             }
-            if (*tk_idx >= tokens.size) {
+            if (*tk_idx >= lexer->tokens.size) {
                 print_column(current_token.column);
                 print_error("Mismatched delimiters! Not all parentheses were closed!\n");
                 return -1;
@@ -244,15 +244,15 @@ int64_t parse_parentheses(size_t *const tk_idx) {
     return head_idx;
 }
 
-int64_t parser(void) {
-    if (tokens.size == 0) {
+int64_t parser(struct Lexer *const lexer) {
+    if (lexer->tokens.size == 0) {
         return -1;
     }
     size_t tk_idx = 0;
     tree.size = 0;
-    int64_t head_idx = parse_parentheses(&tk_idx);
-    if ((tk_idx < tokens.size) && (tokens.list[tk_idx].op == ')')) {
-        print_column(tokens.list[tk_idx].column);
+    int64_t head_idx = parse_parentheses(lexer, &tk_idx);
+    if ((tk_idx < lexer->tokens.size) && (((struct Token *)lexer->tokens.data)[tk_idx].op == ')')) {
+        print_column(((struct Token *)lexer->tokens.data)[tk_idx].column);
         print_error("Mismatched delimiters! Unexpected closing parentheses!\n");
         return -1;
     }

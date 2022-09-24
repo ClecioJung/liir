@@ -24,52 +24,34 @@
 // HEADER
 //------------------------------------------------------------------------------
 
-#ifndef __LEX
-#define __LEX
+#ifndef __ALLOCATOR
+#define __ALLOCATOR
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
-#include "allocator.h"
+// A custom allocator based on dynamic arrays
+// It can be used only in applications where all the memory is deallocated at once
+// This approach is simple, fast, saves memory and avoids memory fragmentation
 
-enum Tok_Types {
-    TOK_OPERATOR,        // +, -, *, /, ^ and =
-    TOK_UNARY_OPERATOR,  // -
-    TOK_DELIMITER,       // ( and )
-    TOK_NUMBER,
-    TOK_VARIABLE,
-    TOK_FUNCTION,
+struct Allocator {
+    size_t base_size;
+    size_t size;
+    size_t capacity;
+    uint8_t *data;
 };
 
-struct String {
-    char *string;
-    unsigned int length;
-};
+struct Allocator allocator_construct(const size_t base_size, const size_t initial_capacity);
+void allocator_delete(struct Allocator *const allocator);
+void allocator_free_all(struct Allocator *const allocator);
+int64_t allocator_new(struct Allocator *const allocator);
+int64_t allocator_new_array(struct Allocator *const allocator, const size_t size);
+bool allocator_is_valid(const struct Allocator allocator, const int64_t ptrdiff);
+bool allocator_is_invalid(const struct Allocator allocator, const int64_t ptrdiff);
+void *allocator_get(const struct Allocator allocator, const int64_t ptrdiff);
 
-struct Token {
-    enum Tok_Types type;
-    int column;
-    union {
-        char op;
-        double number;
-        struct String name;
-        int function_index;
-    };
-};
-
-struct Lexer {
-    // Table used to save the list of tokens
-    struct Allocator tokens;
-};
-
-struct Lexer create_lex(const size_t initial_size);
-void destroy_lex(struct Lexer *const lexer);
-int lex(struct Lexer *const lexer, const char *const line);
-void print_token(const struct Token tok);
-void print_tokens(struct Lexer *const lexer);
-unsigned int max_uint(const unsigned int a, const unsigned int b);
-
-#endif  // __LEX
+#endif  // __ALLOCATOR
 
 //------------------------------------------------------------------------------
 // END
