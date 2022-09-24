@@ -226,10 +226,6 @@ void print_tokens(struct Lexer *const lexer) {
     printf("\n");
 }
 
-unsigned int max_uint(const unsigned int a, const unsigned int b) {
-    return ((a > b) ? a : b);
-}
-
 //------------------------------------------------------------------------------
 // END
 //------------------------------------------------------------------------------

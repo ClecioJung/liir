@@ -29,36 +29,29 @@
 
 #include <stdint.h>
 
-#include "parser.h"
+#include "allocator.h"
 
 struct Variable {
     int64_t name_idx;
     double value;
 };
 
-// Table used to save the list of variables
-struct Variable_List {
-    struct Variable *list;
-    int size;
-    int capacitity;
+struct Variables {
+    // Table used to save the list of variables
+    struct Allocator list;
+    // Dynamic array used to store the names of the variables
+    struct Allocator names;
 };
 
-// Dynamic array used to store the names of the variables
-struct Variable_Names {
-    char *string;
-    unsigned int size;
-    unsigned int capacitity;
-};
-
-void init_variables(void);
-void free_variables(void);
-void clear_variables(void);
-int search_variable(const char *const name, const unsigned int length, int *const index);
-void new_variable(const int index, char *const name, const unsigned int length, const double value);
-double assign_variable(char *const name, const unsigned int length, const double value);
-double get_variable(const int index);
-void print_variables(void);
-bool variable_list_is_empty(void);
+struct Variables create_variables(const size_t initial_list_size, const size_t initial_name_size);
+void destroy_variables(struct Variables *const vars);
+void clear_variables(struct Variables *const vars);
+int search_variable(struct Variables *const vars, const char *const name, const unsigned int length, int *const index);
+void new_variable(struct Variables *const vars, const int index, char *const name, const unsigned int length, const double value);
+double assign_variable(struct Variables *const vars, char *const name, const unsigned int length, const double value);
+double get_variable(struct Variables *const vars, const int index);
+void print_variables(struct Variables *const vars);
+bool variable_list_is_empty(struct Variables *const vars);
 
 #endif  // __VARIABLES
 

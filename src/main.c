@@ -70,6 +70,10 @@ static const size_t arg_num = (sizeof(arg_list) / sizeof(arg_list[0]));
 static const char *software = NULL;
 static enum Actions actions = 0;
 
+unsigned int max_uint(const unsigned int a, const unsigned int b) {
+    return ((a > b) ? a : b);
+}
+
 void arguments_usage(void) {
     unsigned int cmd_max_length = 0;
     printf("[Usage] %s [Options]\n", software);
@@ -126,7 +130,8 @@ int parse_arguments(const int argc, const char *const argv[]) {
     return EXIT_SUCCESS;
 }
 
-double exit_func(const double arg) {
+double fn_exit(struct Variables *const vars, const double arg) {
+    (void)vars;
     (void)arg;
     actions |= ACTION_EXIT;
     return NAN;
@@ -150,8 +155,8 @@ int main(const int argc, const char *const argv[]) {
         print_crash_and_exit("Couldn't allocate memory for the line buffer!\n");
     }
     struct Lexer lexer = create_lex(64);
-    struct Parser parser = create_parser(&lexer, 1024);
-    init_variables();
+    struct Variables vars = create_variables(64, 1024);
+    struct Parser parser = create_parser(&lexer, &vars, 1024);
     while ((actions & ACTION_EXIT) == 0) {
         printf("> ");
         // If the line buffer is too small, getline will reallocate it
@@ -177,12 +182,12 @@ int main(const int argc, const char *const argv[]) {
             print_tree(&parser, head_idx);
         }
         if (actions & ACTION_PRINT_VARIABLES) {
-            print_variables();
+            print_variables(&vars);
         }
     }
     destroy_lex(&lexer);
+    destroy_variables(&vars);
     destroy_parser(&parser);
-    free_variables();
     free(line);
     return EXIT_SUCCESS;
 }

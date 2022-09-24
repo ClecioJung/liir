@@ -29,7 +29,9 @@
 
 #include <stdbool.h>
 
-typedef double (*Function_Pointer)(double arg);
+#include "variables.h"
+
+typedef double (*Function_Pointer)(struct Variables *const vars, double arg);
 
 struct Function {
     char *name;

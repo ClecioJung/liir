@@ -40,38 +40,100 @@
 #endif
 
 // Defined on main.c
-extern double exit_func(const double arg);
+extern double fn_exit(struct Variables *const vars, const double arg);
 
-double clear_func(const double arg) {
+double fn_clear(struct Variables *const vars, const double arg) {
     (void)arg;
-    clear_variables();
+    clear_variables(vars);
     return NAN;
 }
 
-double variables_func(const double arg) {
+double fn_variables(struct Variables *const vars, const double arg) {
     (void)arg;
-    if (variable_list_is_empty()) {
+    if (variable_list_is_empty(vars)) {
         printf("The variables list is empty!\n");
     } else {
-        print_variables();
+        print_variables(vars);
     }
     return NAN;
 }
 
-double functions_func(const double arg) {
+double fn_functions(struct Variables *const vars, const double arg) {
+    (void)vars;
     (void)arg;
     print_functions();
     return NAN;
 }
 
-double euler(const double arg) {
+double fn_euler(struct Variables *const vars, const double arg) {
+    (void)vars;
     (void)arg;
     return M_E;
 }
 
-double pi(const double arg) {
+double fn_pi(struct Variables *const vars, const double arg) {
+    (void)vars;
     (void)arg;
     return M_PI;
+}
+double fn_sqrt(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return sqrt(arg);
+}
+
+double fn_cbrt(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return cbrt(arg);
+}
+
+double fn_exp(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return exp(arg);
+}
+
+double fn_log(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return log(arg);
+}
+
+double fn_log10(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return log10(arg);
+}
+
+double fn_log2(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return log2(arg);
+}
+
+double fn_sin(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return sin(arg);
+}
+
+double fn_cos(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return cos(arg);
+}
+
+double fn_tan(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return tan(arg);
+}
+
+double fn_asin(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return asin(arg);
+}
+
+double fn_acos(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return acos(arg);
+}
+
+double fn_atan(struct Variables *const vars, const double arg) {
+    (void)vars;
+    return atan(arg);
 }
 
 const struct Function functions[] = {
@@ -80,126 +142,126 @@ const struct Function functions[] = {
         .description = "Closes this process",
         .arity = 0,
         .return_value = false,
-        .fn = &exit_func,
+        .fn = &fn_exit,
     },
     {
         .name = "clear",
         .description = "clear all variables from memory",
         .arity = 0,
         .return_value = false,
-        .fn = &clear_func,
+        .fn = &fn_clear,
     },
     {
         .name = "variables",
         .description = "List all current variables",
         .arity = 0,
         .return_value = false,
-        .fn = &variables_func,
+        .fn = &fn_variables,
     },
     {
         .name = "functions",
         .description = "List all built-in functions",
         .arity = 0,
         .return_value = false,
-        .fn = &functions_func,
+        .fn = &fn_functions,
     },
     {
         .name = "euler",
         .description = "Returns the euler constant",
         .arity = 0,
         .return_value = true,
-        .fn = &euler,
+        .fn = &fn_euler,
     },
     {
         .name = "pi",
         .description = "Returns the pi constant",
         .arity = 0,
         .return_value = true,
-        .fn = &pi,
+        .fn = &fn_pi,
     },
     {
         .name = "sqrt",
         .description = "Returns the square root of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &sqrt,
+        .fn = &fn_sqrt,
     },
     {
         .name = "cbrt",
         .description = "Returns the cubic root of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &cbrt,
+        .fn = &fn_cbrt,
     },
     {
         .name = "exp",
         .description = "Returns the exponential of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &exp,
+        .fn = &fn_exp,
     },
     {
         .name = "ln",
         .description = "Returns the natural logarithm of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &log,
+        .fn = &fn_log,
     },
     {
         .name = "log10",
         .description = "Returns the logarithm base 10 of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &log10,
+        .fn = &fn_log10,
     },
     {
         .name = "log2",
         .description = "Returns the logarithm base 2 of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &log2,
+        .fn = &fn_log2,
     },
     {
         .name = "sin",
         .description = "Returns the sine function of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &sin,
+        .fn = &fn_sin,
     },
     {
         .name = "cos",
         .description = "Returns the cosine function of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &cos,
+        .fn = &fn_cos,
     },
     {
         .name = "tan",
         .description = "Returns the tangent function of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &tan,
+        .fn = &fn_tan,
     },
     {
         .name = "asin",
         .description = "Returns the inverse sine function of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &asin,
+        .fn = &fn_asin,
     },
     {
         .name = "acos",
         .description = "Returns the inverse cosine function of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &acos,
+        .fn = &fn_acos,
     },
     {
         .name = "atan",
         .description = "Returns the inverse tangent function of it's argument",
         .arity = 1,
         .return_value = true,
-        .fn = &atan,
+        .fn = &fn_atan,
     },
 };
 
@@ -218,6 +280,8 @@ int search_function(const char *const name, const int length) {
     // Didn't found the function in the list
     return functions_quantity;
 }
+
+extern unsigned int max_uint(const unsigned int a, const unsigned int b);
 
 static inline unsigned int longest_name_functions(void) {
     unsigned int length = 0;

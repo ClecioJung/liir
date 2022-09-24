@@ -67,7 +67,6 @@ void destroy_lex(struct Lexer *const lexer);
 int lex(struct Lexer *const lexer, const char *const line);
 void print_token(const struct Token tok);
 void print_tokens(struct Lexer *const lexer);
-unsigned int max_uint(const unsigned int a, const unsigned int b);
 
 #endif  // __LEX
 

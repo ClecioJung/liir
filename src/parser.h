@@ -31,6 +31,7 @@
 
 #include "allocator.h"
 #include "lex.h"
+#include "variables.h"
 
 // Nodes of the abstract syntax tree (AST)
 struct Token_Node {
@@ -41,6 +42,7 @@ struct Token_Node {
 
 struct Parser {
     struct Lexer *lexer;
+    struct Variables *vars;
     // Structure used to save the nodes of the AST
     struct Allocator nodes;
 };
@@ -52,7 +54,7 @@ enum Evaluation_Status {
     Eval_Error,
 };
 
-struct Parser create_parser(struct Lexer *const lexer, const size_t initial_size);
+struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size);
 void destroy_parser(struct Parser *const parser);
 int64_t parse(struct Parser *const parser);
 double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status);

@@ -31,80 +31,69 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "parser.h"
 #include "print_errors.h"
 
-static const size_t initial_variable_list_size = 64;
+struct Variables create_variables(const size_t initial_list_size, const size_t initial_name_size) {
+    struct Variables vars = (struct Variables){
+        .list = allocator_construct(sizeof(struct Variable), initial_list_size),
+        .names = allocator_construct(sizeof(char), initial_name_size),
+    };
+    return vars;
+}
 
-static struct Variable_List variables = {0};
-
-void resize_variable_list(const int size) {
-    struct Variable *newList = (struct Variable *)realloc(variables.list, size * sizeof(struct Variable));
-    if (newList == NULL) {
-        free_variables();
-        print_crash_and_exit("Could't reallocate memory for the variables!\n");
+void destroy_variables(struct Variables *const vars) {
+    if (vars == NULL) {
+        print_crash_and_exit("Invalid call to function \"destroy_variables()\"!\n");
+        return;
     }
-    variables.list = newList;
-    variables.capacitity = size;
+    allocator_delete(&vars->list);
+    allocator_delete(&vars->names);
 }
 
-static const size_t initial_variable_names_size = 1024;
-
-static struct Variable_Names variable_names = {0};
-
-void resize_variable_names(const int size) {
-    char *newList = (char *)realloc(variable_names.string, size * sizeof(char));
-    if (newList == NULL) {
-        free_variables();
-        print_crash_and_exit("Could't reallocate memory for the variable names!\n");
+void clear_variables(struct Variables *const vars) {
+    if (vars == NULL) {
+        print_crash_and_exit("Invalid call to function \"clear_variables()\"!\n");
+        return;
     }
-    variable_names.string = newList;
-    variable_names.capacitity = size;
+    allocator_free_all(&vars->list);
+    allocator_free_all(&vars->names);
 }
 
-void init_variables(void) {
-    resize_variable_list(initial_variable_list_size);
-    resize_variable_names(initial_variable_names_size);
+static inline struct Variable *variable(struct Variables *const vars, const int index) {
+    return allocator_get(vars->list, index);
 }
 
-void free_variables(void) {
-    free(variables.list);
-    variables.list = NULL;
-    free(variable_names.string);
-    variable_names.string = NULL;
+static inline char *variable_name(struct Variables *const vars, const int index) {
+    struct Variable *var = variable(vars, index);
+    return allocator_get(vars->names, var->name_idx);
 }
 
-// Deletes all variables
-void clear_variables(void) {
-    variables.size = 0;
-    variable_names.size = 0;
-}
-
-static inline char *variable_name(const int index) {
-    return &variable_names.string[variables.list[index].name_idx];
-}
-
-static inline double variable_value(const int index) {
-    return variables.list[index].value;
+static inline double variable_value(struct Variables *const vars, const int index) {
+    struct Variable *var = variable(vars, index);
+    return var->value;
 }
 
 // This function returns zero if found the variable in the list
-int search_variable(const char *const name, const unsigned int length, int *const index) {
+int search_variable(struct Variables *const vars, const char *const name, const unsigned int length, int *const index) {
+    if (vars == NULL) {
+        print_crash_and_exit("Invalid call to function \"search_variable()\"!\n");
+        return -1;
+    }
     if (index == NULL) {
         return -1;
     }
-    if (variables.size == 0) {
+    if (vars->list.size == 0) {
         *index = 0;
         return -1;
     }
     // Binary search in variables list
-    *index = variables.size;  // middle
+    *index = vars->list.size;  // middle
     int low = 0;
-    int high = variables.size - 1;
+    int high = vars->list.size - 1;
     int comp = -1;
     while (low <= high) {
         *index = (low + high) / 2;
-        comp = strncmp(name, variable_name(*index), length);
+        comp = strncmp(name, variable_name(vars, *index), length);
         if (comp < 0) {
             high = *index - 1;
         } else if (comp > 0) {
@@ -116,76 +105,87 @@ int search_variable(const char *const name, const unsigned int length, int *cons
     return comp;
 }
 
-void new_variable(const int index, char *const name, const unsigned int length, const double value) {
-    // Allocates more memory for the list, if necessary
-    if (variables.size >= variables.capacitity) {
-        resize_variable_list(2 * variables.capacitity);
+void new_variable(struct Variables *const vars, const int index, char *const name, const unsigned int length, const double value) {
+    if (vars == NULL) {
+        print_crash_and_exit("Invalid call to function \"new_variable()\"!\n");
+        return;
     }
     // Moves variables down in the list to make space for the new variable
-    for (int i = variables.size; i > index; i--) {
-        variables.list[i].name_idx = variables.list[i - 1].name_idx;
-        variables.list[i].value = variables.list[i - 1].value;
+    for (int i = allocator_new(&vars->list); i > index; i--) {
+        struct Variable *current = variable(vars, i);
+        struct Variable *previous = variable(vars, i - 1);
+        current->name_idx = previous->name_idx;
+        current->value = previous->value;
     }
-    // Allocates memory for the name
-    if ((variable_names.size + length + 1) >= variable_names.capacitity) {
-        resize_variable_names(2 * variable_names.capacitity);
-    }
-    variables.list[index].name_idx = variable_names.size;
-    char *const var_name = variable_name(index);
+    struct Variable *const new_var = variable(vars, index);
+    new_var->name_idx = allocator_new_array(&vars->names, length + 1);
+    new_var->value = value;
+    char *const var_name = variable_name(vars, index);
     strncpy(var_name, name, length);
     var_name[length] = '\0';
-    variables.list[index].value = value;
-    variables.size++;
-    variable_names.size += length + 1;
 }
 
-double assign_variable(char *const name, const unsigned int length, const double value) {
+double assign_variable(struct Variables *const vars, char *const name, const unsigned int length, const double value) {
+    if (vars == NULL) {
+        print_crash_and_exit("Invalid call to function \"assign_variable()\"!\n");
+        return NAN;
+    }
     int index;
-    const int search = search_variable(name, length, &index);
+    const int search = search_variable(vars, name, length, &index);
     if (search != 0) {
         // Insert new variable in alphabetical order
         if (search > 0) {
             index++;
         }
-        new_variable(index, name, length, value);
+        new_variable(vars, index, name, length, value);
     } else {
         // Variable already exist
-        variables.list[index].value = value;
+        variable(vars, index)->value = value;
     }
     return value;
 }
 
-double get_variable(const int index) {
-    if ((index < 0) || (index > variables.size)) {
+double get_variable(struct Variables *const vars, const int index) {
+    if (vars == NULL) {
+        print_crash_and_exit("Invalid call to function \"get_variable()\"!\n");
         return NAN;
     }
-    return variables.list[index].value;
+    if (allocator_is_invalid(vars->list, index)) {
+        return NAN;
+    }
+    return variable(vars, index)->value;
 }
 
-static inline unsigned int longest_name_variables(void) {
+extern unsigned int max_uint(const unsigned int a, const unsigned int b);
+
+static inline unsigned int longest_name_variables(struct Variables *const vars) {
     unsigned int length = 0;
-    for (int i = 0; i < variables.size; i++) {
-        length = max_uint(length, strlen(variable_name(i)));
+    for (size_t i = 0; i < vars->list.size; i++) {
+        length = max_uint(length, strlen(variable_name(vars, i)));
     }
     return length;
 }
 
-void print_variables(void) {
-    if (variables.size == 0) {
+void print_variables(struct Variables *const vars) {
+    if (vars == NULL) {
+        print_crash_and_exit("Invalid call to function \"print_variables()\"!\n");
+        return;
+    }
+    if (vars->list.size == 0) {
         return;
     }
     const char *const header = "Name";
-    const unsigned int max_length = max_uint(longest_name_variables(), strlen(header));
+    const unsigned int max_length = max_uint(longest_name_variables(vars), strlen(header));
     printf("List of variables:\n");
     printf("%-*s Value\n", max_length, header);
-    for (int i = 0; i < variables.size; i++) {
-        printf("%-*s %lg\n", max_length, variable_name(i), variable_value(i));
+    for (size_t i = 0; i < vars->list.size; i++) {
+        printf("%-*s %lg\n", max_length, variable_name(vars, i), variable_value(vars, i));
     }
     printf("\n");
 }
 
-bool variable_list_is_empty(void) {
-    return (variables.size == 0);
+bool variable_list_is_empty(struct Variables *const vars) {
+    return (vars->list.size == 0);
 }
 
 //------------------------------------------------------------------------------

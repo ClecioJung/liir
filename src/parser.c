@@ -36,12 +36,13 @@
 #include "print_errors.h"
 #include "variables.h"
 
-struct Parser create_parser(struct Lexer *const lexer, const size_t initial_size) {
-    if (lexer == NULL) {
+struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size) {
+    if ((lexer == NULL) || (vars == NULL)) {
         print_crash_and_exit("Invalid call to function \"create_parser()\"!\n");
     }
     struct Parser parser = (struct Parser){
         .lexer = lexer,
+        .vars = vars,
         .nodes = allocator_construct(sizeof(struct Token_Node), initial_size)};
     return parser;
 }
@@ -323,7 +324,7 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
                     }
                     const double result = evaluate(parser, get_right_idx(parser, node_idx), status);
                     if (*status != Eval_Error) {
-                        return assign_variable(get_tok(parser, get_left_idx(parser, node_idx)).name.string, get_tok(parser, get_left_idx(parser, node_idx)).name.length, result);
+                        return assign_variable(parser->vars, get_tok(parser, get_left_idx(parser, node_idx)).name.string, get_tok(parser, get_left_idx(parser, node_idx)).name.length, result);
                     } else {
                         return NAN;
                     }
@@ -366,17 +367,17 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
             if ((!function.return_value) && (*status != Eval_Error)) {
                 *status = Eval_Dont_Print;
             }
-            return function.fn(evaluate(parser, get_right_idx(parser, node_idx), status));
+            return function.fn(parser->vars, evaluate(parser, get_right_idx(parser, node_idx), status));
         }
         case TOK_VARIABLE: {
             int index;
-            if (search_variable(get_tok(parser, node_idx).name.string, get_tok(parser, node_idx).name.length, &index) != 0) {
+            if (search_variable(parser->vars, get_tok(parser, node_idx).name.string, get_tok(parser, node_idx).name.length, &index) != 0) {
                 print_column(get_tok(parser, node_idx).column);
                 print_error("Unrecognized name: \"%.*s\"!\n", get_tok(parser, node_idx).name.length, get_tok(parser, node_idx).name.string);
                 *status = Eval_Error;
                 return NAN;
             }
-            return get_variable(index);
+            return get_variable(parser->vars, index);
         }
         case TOK_DELIMITER:
             print_column(get_tok(parser, node_idx).column);
