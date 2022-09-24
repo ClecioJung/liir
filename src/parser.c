@@ -117,7 +117,7 @@ static int get_op_precedence(const char op) {
 
 static inline bool check_parser_right_error(const int64_t previous_idx, const int64_t current_idx) {
     if (is_invalid_idx(previous_idx) || is_invalid_idx(current_idx)) {
-        print_crash_and_exit("Invlaid call to function \"check_parser_right_error()\"!\n");
+        print_crash_and_exit("Invalid call to function \"check_parser_right_error()\"!\n");
         return true;
     }
     struct Token previous_tok = get_tok(previous_idx);
@@ -169,7 +169,7 @@ bool insert_node_right(int64_t *const head_idx, const int64_t node_idx) {
         *head_idx = node_idx;
     } else {
         int64_t previous_idx = *head_idx;
-        while (get_right_idx(previous_idx) >= 0) {
+        while (is_valid_idx(get_right_idx(previous_idx))) {
             previous_idx = get_right_idx(previous_idx);
         }
         if (check_parser_right_error(previous_idx, node_idx)) {
@@ -180,7 +180,7 @@ bool insert_node_right(int64_t *const head_idx, const int64_t node_idx) {
     return false;
 }
 
-bool insert_new_op(int64_t *const head_idx, const int64_t node_idx) {
+bool insert_new_op(int64_t *const head_idx, const int64_t node_idx, const int64_t max_idx) {
     if (*head_idx < 0) {
         *head_idx = node_idx;
     } else {
@@ -188,12 +188,8 @@ bool insert_new_op(int64_t *const head_idx, const int64_t node_idx) {
         {  // Search for the correct place to insert the node
             int64_t next_idx = *head_idx;
             const int precedence = get_op_precedence(get_tok(node_idx).op);
-            while ((next_idx >= 0) && (get_tok(next_idx).type == TOK_OPERATOR)) {
-                if (get_op_precedence(get_tok(next_idx).op) <= precedence) {
-                    break;
-                }
-                // Division has higher left precedence
-                if (get_tok(next_idx).op == '/') {
+            while (is_valid_idx(next_idx) && (get_tok(next_idx).type == TOK_OPERATOR)) {
+                if ((next_idx == max_idx) || (get_op_precedence(get_tok(next_idx).op) <= precedence)) {
                     break;
                 }
                 previous_idx = next_idx;
@@ -201,7 +197,7 @@ bool insert_new_op(int64_t *const head_idx, const int64_t node_idx) {
             }
         }
         // Insert new node
-        if (previous_idx < 0) {
+        if (is_invalid_idx(previous_idx)) {
             get_node_ptr(node_idx)->left_idx = *head_idx;
             *head_idx = node_idx;
         } else {
@@ -214,15 +210,17 @@ bool insert_new_op(int64_t *const head_idx, const int64_t node_idx) {
 
 int64_t parse_parentheses(size_t *const tk_idx) {
     if (tk_idx == NULL) {
+        print_crash_and_exit("Invalid call to function \"parse_parentheses()\"!\n");
         return -1;
     }
     int64_t head_idx = -1;
+    int64_t last_parentheses_idx = -1;
     while ((*tk_idx < tokens.size) && (tokens.list[*tk_idx].op != ')')) {
         const struct Token current_token = tokens.list[*tk_idx];
         if (current_token.op == '(') {
             (*tk_idx)++;
-            int64_t node_idx = parse_parentheses(tk_idx);
-            if (insert_node_right(&head_idx, node_idx)) {
+            last_parentheses_idx = parse_parentheses(tk_idx);
+            if (insert_node_right(&head_idx, last_parentheses_idx)) {
                 return -1;
             }
             if (*tk_idx >= tokens.size) {
@@ -232,7 +230,7 @@ int64_t parse_parentheses(size_t *const tk_idx) {
             }
         } else if (current_token.type == TOK_OPERATOR) {
             int64_t node_idx = new_node(current_token);
-            if (insert_new_op(&head_idx, node_idx)) {
+            if (insert_new_op(&head_idx, node_idx, last_parentheses_idx)) {
                 return -1;
             }
         } else {
@@ -272,42 +270,42 @@ double evaluate(const int64_t node_idx, enum Evaluation_Status *const status) {
         case TOK_OPERATOR:
             switch (get_tok(node_idx).op) {
                 case '+':
-                    if ((get_left_idx(node_idx) < 0) || (get_right_idx(node_idx) < 0)) {
+                    if (is_invalid_idx(get_left_idx(node_idx)) || is_invalid_idx(get_right_idx(node_idx))) {
                         print_column(get_tok(node_idx).column);
                         print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(node_idx).op);
                         return NAN;
                     }
                     return (evaluate(get_left_idx(node_idx), status) + evaluate(get_right_idx(node_idx), status));
                 case '-':
-                    if ((get_left_idx(node_idx) < 0) || (get_right_idx(node_idx) < 0)) {
+                    if (is_invalid_idx(get_left_idx(node_idx)) || is_invalid_idx(get_right_idx(node_idx))) {
                         print_column(get_tok(node_idx).column);
                         print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(node_idx).op);
                         return NAN;
                     }
                     return (evaluate(get_left_idx(node_idx), status) - evaluate(get_right_idx(node_idx), status));
                 case '*':
-                    if ((get_left_idx(node_idx) < 0) || (get_right_idx(node_idx) < 0)) {
+                    if (is_invalid_idx(get_left_idx(node_idx)) || is_invalid_idx(get_right_idx(node_idx))) {
                         print_column(get_tok(node_idx).column);
                         print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(node_idx).op);
                         return NAN;
                     }
                     return (evaluate(get_left_idx(node_idx), status) * evaluate(get_right_idx(node_idx), status));
                 case '/':
-                    if ((get_left_idx(node_idx) < 0) || (get_right_idx(node_idx) < 0)) {
+                    if (is_invalid_idx(get_left_idx(node_idx)) || is_invalid_idx(get_right_idx(node_idx))) {
                         print_column(get_tok(node_idx).column);
                         print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(node_idx).op);
                         return NAN;
                     }
                     return (evaluate(get_left_idx(node_idx), status) / evaluate(get_right_idx(node_idx), status));
                 case '^':
-                    if ((get_left_idx(node_idx) < 0) || (get_right_idx(node_idx) < 0)) {
+                    if (is_invalid_idx(get_left_idx(node_idx)) || is_invalid_idx(get_right_idx(node_idx))) {
                         print_column(get_tok(node_idx).column);
                         print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(node_idx).op);
                         return NAN;
                     }
                     return pow(evaluate(get_left_idx(node_idx), status), evaluate(get_right_idx(node_idx), status));
                 case '=': {
-                    if ((get_left_idx(node_idx) < 0) || (get_right_idx(node_idx) < 0)) {
+                    if (is_invalid_idx(get_left_idx(node_idx)) || is_invalid_idx(get_right_idx(node_idx))) {
                         print_column(get_tok(node_idx).column);
                         print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(node_idx).op);
                         return NAN;
@@ -340,7 +338,7 @@ double evaluate(const int64_t node_idx, enum Evaluation_Status *const status) {
         case TOK_UNARY_OPERATOR:
             switch (get_tok(node_idx).op) {
                 case '-':
-                    if (get_right_idx(node_idx) < 0) {
+                    if (is_invalid_idx(get_right_idx(node_idx))) {
                         print_column(get_tok(node_idx).column);
                         print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(node_idx).op);
                         return NAN;
@@ -362,7 +360,7 @@ double evaluate(const int64_t node_idx, enum Evaluation_Status *const status) {
                 *status = Eval_Error;
                 return NAN;
             }
-            if ((function.arity >= 1) && (get_right_idx(node_idx) < 0)) {
+            if ((function.arity >= 1) && is_invalid_idx(get_right_idx(node_idx))) {
                 print_column(get_tok(node_idx).column);
                 print_warning("Did you forget to pass a argument to the function \"%s\"?\n", function.name);
             }
