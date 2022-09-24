@@ -37,13 +37,17 @@
 #include "print_errors.h"
 
 struct Lexer create_lex(const size_t initial_size) {
-    struct Lexer lexer = (struct Lexer) {
+    struct Lexer lexer = (struct Lexer){
         .tokens = allocator_construct(sizeof(struct Token), initial_size),
     };
     return lexer;
 }
 
 void destroy_lex(struct Lexer *const lexer) {
+    if (lexer == NULL) {
+        print_crash_and_exit("Invalid call to function \"destroy_lex()\"!\n");
+        return;
+    }
     allocator_delete(&lexer->tokens);
 }
 
@@ -133,6 +137,10 @@ static inline char *add_name(struct Lexer *const lexer, const char *const first,
 }
 
 int lex(struct Lexer *const lexer, const char *const line) {
+    if ((lexer == NULL) || (line == NULL)) {
+        print_crash_and_exit("Invalid call to function \"lex()\"!\n");
+        return EXIT_FAILURE;
+    }
     allocator_free_all(&lexer->tokens);
     const char *c = line;
     while (*c != '\0') {
@@ -203,6 +211,10 @@ void print_token(const struct Token tok) {
 }
 
 void print_tokens(struct Lexer *const lexer) {
+    if (lexer == NULL) {
+        print_crash_and_exit("Invalid call to function \"print_tokens()\"!\n");
+        return;
+    }
     if (lexer->tokens.size == 0) {
         return;
     }

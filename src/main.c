@@ -150,7 +150,7 @@ int main(const int argc, const char *const argv[]) {
         print_crash_and_exit("Couldn't allocate memory for the line buffer!\n");
     }
     struct Lexer lexer = create_lex(64);
-    init_parser();
+    struct Parser parser = create_parser(&lexer, 1024);
     init_variables();
     while ((actions & ACTION_EXIT) == 0) {
         printf("> ");
@@ -159,12 +159,12 @@ int main(const int argc, const char *const argv[]) {
             print_crash_and_exit("Couldn't get line from stdin!\n");
         }
         if (lex(&lexer, line) == EXIT_FAILURE) {
-            return EXIT_FAILURE;
+            continue;
         }
-        int64_t head_idx = parser(&lexer);
+        int64_t head_idx = parse(&parser);
         if (head_idx >= 0) {
             enum Evaluation_Status status = Eval_OK;
-            const double result = evaluate(head_idx, &status);
+            const double result = evaluate(&parser, head_idx, &status);
             if (status == Eval_OK) {
                 printf("%lg\n", result);
             }
@@ -174,15 +174,15 @@ int main(const int argc, const char *const argv[]) {
             print_tokens(&lexer);
         }
         if ((head_idx >= 0) && (actions & ACTION_PRINT_TREE)) {
-            print_tree(head_idx);
+            print_tree(&parser, head_idx);
         }
         if (actions & ACTION_PRINT_VARIABLES) {
             print_variables();
         }
     }
     destroy_lex(&lexer);
+    destroy_parser(&parser);
     free_variables();
-    free_parser();
     free(line);
     return EXIT_SUCCESS;
 }

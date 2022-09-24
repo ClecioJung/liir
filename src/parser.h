@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 
+#include "allocator.h"
 #include "lex.h"
 
 // Nodes of the abstract syntax tree (AST)
@@ -38,11 +39,10 @@ struct Token_Node {
     int64_t right_idx;
 };
 
-// Structure used to save the nodes of the AST
-struct Tree {
-    struct Token_Node *nodes;
-    int size;
-    int capacitity;
+struct Parser {
+    struct Lexer *lexer;
+    // Structure used to save the nodes of the AST
+    struct Allocator nodes;
 };
 
 // Enumeration used to track the status of the evaluation phase
@@ -52,11 +52,11 @@ enum Evaluation_Status {
     Eval_Error,
 };
 
-void init_parser(void);
-void free_parser(void);
-int64_t parser(struct Lexer *const lexer);
-double evaluate(const int64_t node_idx, enum Evaluation_Status *const status);
-void print_tree(const int64_t head_idx);
+struct Parser create_parser(struct Lexer *const lexer, const size_t initial_size);
+void destroy_parser(struct Parser *const parser);
+int64_t parse(struct Parser *const parser);
+double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status);
+void print_tree(struct Parser *const parser, const int64_t head_idx);
 
 #endif  // __PARSER
 
