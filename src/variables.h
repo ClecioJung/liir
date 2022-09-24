@@ -27,10 +27,12 @@
 #ifndef __VARIABLES
 #define __VARIABLES
 
+#include <stdint.h>
+
 #include "parser.h"
 
 struct Variable {
-    char *name;
+    int64_t name_idx;
     double value;
 };
 
@@ -41,13 +43,19 @@ struct Variable_List {
     int capacitity;
 };
 
+// Dynamic array used to store the names of the variables
+struct Variable_Names {
+    char *string;
+    unsigned int size;
+    unsigned int capacitity;
+};
+
 void init_variables(void);
 void free_variables(void);
 void clear_variables(void);
 int search_variable(const char *const name, const unsigned int length, int *const index);
 void new_variable(const int index, char *const name, const unsigned int length, const double value);
 double assign_variable(char *const name, const unsigned int length, const double value);
-double delete_variable(char *const name, const unsigned int length);
 double get_variable(const int index);
 void print_variables(void);
 bool variable_list_is_empty(void);

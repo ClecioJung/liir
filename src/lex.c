@@ -80,13 +80,10 @@ static inline void add_op(const char op, const int column) {
             (last_token.type == TOK_UNARY_OPERATOR) ||
             (last_token.type == TOK_DELIMITER)) {
             tok.type = TOK_UNARY_OPERATOR;
-        } else if ((last_token.type == TOK_FUNCTION) &&
-                   (functions[last_token.function_index].arity >= 1)) {
+        } else if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
             tok.type = TOK_UNARY_OPERATOR;
             print_column(last_token.column);
-            print_warning(
-                "Consider using parentheses to pass arguments to functions, so "
-                "ambiguities are avoided!\n");
+            print_warning("Consider using parentheses to pass arguments to functions, so ambiguities are avoided!\n");
         }
     }
     add_token(tok);
@@ -122,8 +119,7 @@ static inline void add_function(const int index, const int column) {
     add_token(tok);
 }
 
-static inline void add_variable(const char *const name, const int length,
-                                const int column) {
+static inline void add_variable(const char *const name, const int length, const int column) {
     struct Token tok = {
         .type = TOK_VARIABLE,
         .column = column,

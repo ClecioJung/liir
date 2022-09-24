@@ -48,23 +48,44 @@ void resize_variable_list(const int size) {
     variables.capacitity = size;
 }
 
+static const size_t initial_variable_names_size = 1024;
+
+static struct Variable_Names variable_names = {0};
+
+void resize_variable_names(const int size) {
+    char *newList = (char *)realloc(variable_names.string, size * sizeof(char));
+    if (newList == NULL) {
+        free_variables();
+        print_crash_and_exit("Could't reallocate memory for the variable names!\n");
+    }
+    variable_names.string = newList;
+    variable_names.capacitity = size;
+}
+
 void init_variables(void) {
     resize_variable_list(initial_variable_list_size);
+    resize_variable_names(initial_variable_names_size);
 }
 
 void free_variables(void) {
-    clear_variables();
     free(variables.list);
     variables.list = NULL;
+    free(variable_names.string);
+    variable_names.string = NULL;
 }
 
 // Deletes all variables
 void clear_variables(void) {
-    for (int i = 0; i < variables.size; i++) {
-        free(variables.list[i].name);
-        variables.list[i].name = NULL;
-    }
     variables.size = 0;
+    variable_names.size = 0;
+}
+
+static inline char *variable_name(const int index) {
+    return &variable_names.string[variables.list[index].name_idx];
+}
+
+static inline double variable_value(const int index) {
+    return variables.list[index].value;
 }
 
 // This function returns zero if found the variable in the list
@@ -83,7 +104,7 @@ int search_variable(const char *const name, const unsigned int length, int *cons
     int comp = -1;
     while (low <= high) {
         *index = (low + high) / 2;
-        comp = strncmp(name, variables.list[*index].name, length);
+        comp = strncmp(name, variable_name(*index), length);
         if (comp < 0) {
             high = *index - 1;
         } else if (comp > 0) {
@@ -102,36 +123,20 @@ void new_variable(const int index, char *const name, const unsigned int length, 
     }
     // Moves variables down in the list to make space for the new variable
     for (int i = variables.size; i > index; i--) {
-        variables.list[i].name = variables.list[i - 1].name;
+        variables.list[i].name_idx = variables.list[i - 1].name_idx;
         variables.list[i].value = variables.list[i - 1].value;
     }
     // Allocates memory for the name
-    variables.list[index].name = malloc((length + 1) * sizeof(char));
-    if (variables.list[index].name == NULL) {
-        print_crash_and_exit("Could't allocate memory for the variable %.*s!\n", length, name);
+    if ((variable_names.size + length + 1) >= variable_names.capacitity) {
+        resize_variable_names(2 * variable_names.capacitity);
     }
-    strncpy(variables.list[index].name, name, length);
-    variables.list[index].name[length] = '\0';
+    variables.list[index].name_idx = variable_names.size;
+    char *const var_name = variable_name(index);
+    strncpy(var_name, name, length);
+    var_name[length] = '\0';
     variables.list[index].value = value;
     variables.size++;
-}
-
-double delete_variable(char *const name, const unsigned int length) {
-    int index;
-    if (search_variable(name, length, &index) != 0) {
-        return NAN;
-    }
-    // Moves variables up in the list to cover space of the deleted variable
-    const double value = variables.list[index].value;
-    free(variables.list[index].name);
-    variables.list[index].name = NULL;
-    for (int i = index; (i + 1) < variables.size; i++) {
-        variables.list[i].name = variables.list[i + 1].name;
-        variables.list[i].value = variables.list[i + 1].value;
-    }
-    variables.size--;
-    variables.list[variables.size].name = NULL;
-    return value;
+    variable_names.size += length + 1;
 }
 
 double assign_variable(char *const name, const unsigned int length, const double value) {
@@ -160,7 +165,7 @@ double get_variable(const int index) {
 static inline unsigned int longest_name_variables(void) {
     unsigned int length = 0;
     for (int i = 0; i < variables.size; i++) {
-        length = max_uint(length, strlen(variables.list[i].name));
+        length = max_uint(length, strlen(variable_name(i)));
     }
     return length;
 }
@@ -174,7 +179,7 @@ void print_variables(void) {
     printf("List of variables:\n");
     printf("%-*s Value\n", max_length, header);
     for (int i = 0; i < variables.size; i++) {
-        printf("%-*s %lg\n", max_length, variables.list[i].name, variables.list[i].value);
+        printf("%-*s %lg\n", max_length, variable_name(i), variable_value(i));
     }
     printf("\n");
 }
