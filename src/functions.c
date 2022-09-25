@@ -281,6 +281,7 @@ int search_function(const char *const name, const int length) {
     return functions_quantity;
 }
 
+// Defined on main.c
 extern unsigned int max_uint(const unsigned int a, const unsigned int b);
 
 static inline unsigned int longest_name_functions(void) {

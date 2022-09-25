@@ -37,10 +37,9 @@
 #include "print_errors.h"
 
 struct Lexer create_lex(const size_t initial_size) {
-    struct Lexer lexer = (struct Lexer){
+    return (struct Lexer){
         .tokens = allocator_construct(sizeof(struct Token), initial_size),
     };
-    return lexer;
 }
 
 void destroy_lex(struct Lexer *const lexer) {

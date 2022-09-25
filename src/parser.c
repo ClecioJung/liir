@@ -40,11 +40,11 @@ struct Parser create_parser(struct Lexer *const lexer, struct Variables *const v
     if ((lexer == NULL) || (vars == NULL)) {
         print_crash_and_exit("Invalid call to function \"create_parser()\"!\n");
     }
-    struct Parser parser = (struct Parser){
+    return (struct Parser){
         .lexer = lexer,
         .vars = vars,
-        .nodes = allocator_construct(sizeof(struct Token_Node), initial_size)};
-    return parser;
+        .nodes = allocator_construct(sizeof(struct Token_Node), initial_size),
+    };
 }
 
 void destroy_parser(struct Parser *const parser) {
@@ -209,7 +209,7 @@ int64_t parse_parentheses(struct Parser *const parser, size_t *const tk_idx) {
     int64_t last_parentheses_idx = -1;
     while ((*tk_idx < parser->lexer->tokens.size) && (((struct Token *)parser->lexer->tokens.data)[*tk_idx].op != ')')) {
         const struct Token current_token = ((struct Token *)parser->lexer->tokens.data)[*tk_idx];
-        if (current_token.op == '(') {
+        if ((current_token.type == TOK_DELIMITER) && (current_token.op == '(')) {
             (*tk_idx)++;
             last_parentheses_idx = parse_parentheses(parser, tk_idx);
             if (insert_node_right(parser, &head_idx, last_parentheses_idx)) {

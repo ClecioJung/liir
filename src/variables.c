@@ -34,11 +34,10 @@
 #include "print_errors.h"
 
 struct Variables create_variables(const size_t initial_list_size, const size_t initial_name_size) {
-    struct Variables vars = (struct Variables){
+    return (struct Variables){
         .list = allocator_construct(sizeof(struct Variable), initial_list_size),
         .names = allocator_construct(sizeof(char), initial_name_size),
     };
-    return vars;
 }
 
 void destroy_variables(struct Variables *const vars) {
@@ -156,9 +155,10 @@ double get_variable(struct Variables *const vars, const int index) {
     return variable(vars, index)->value;
 }
 
+// Defined on main.c
 extern unsigned int max_uint(const unsigned int a, const unsigned int b);
 
-static inline unsigned int longest_name_variables(struct Variables *const vars) {
+static inline unsigned int longest_variable_name(struct Variables *const vars) {
     unsigned int length = 0;
     for (size_t i = 0; i < vars->list.size; i++) {
         length = max_uint(length, strlen(variable_name(vars, i)));
@@ -175,7 +175,7 @@ void print_variables(struct Variables *const vars) {
         return;
     }
     const char *const header = "Name";
-    const unsigned int max_length = max_uint(longest_name_variables(vars), strlen(header));
+    const unsigned int max_length = max_uint(longest_variable_name(vars), strlen(header));
     printf("List of variables:\n");
     printf("%-*s Value\n", max_length, header);
     for (size_t i = 0; i < vars->list.size; i++) {
