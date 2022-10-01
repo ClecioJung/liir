@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "functions.h"
+#include "input_stream.h"
 #include "lex.h"
 #include "parser.h"
 #include "print_errors.h"
@@ -148,21 +149,12 @@ int main(const int argc, const char *const argv[]) {
     if ((actions & ACTION_EXIT) != 0) {
         return EXIT_SUCCESS;
     }
-    // Pre-allocates memory for the line buffer
-    size_t len = 128;
-    char *line = malloc(len * sizeof(char));
-    if (line == NULL) {
-        print_crash_and_exit("Couldn't allocate memory for the line buffer!\n");
-    }
+    struct Input_Stream input_stream = create_input_stream();
     struct Lexer lexer = create_lex(64);
     struct Variables vars = create_variables(64, 1024);
     struct Parser parser = create_parser(&lexer, &vars, 1024);
     while ((actions & ACTION_EXIT) == 0) {
-        printf("> ");
-        // If the line buffer is too small, getline will reallocate it
-        if (getline(&line, &len, stdin) == -1) {
-            print_crash_and_exit("Couldn't get line from stdin!\n");
-        }
+        char *line = get_line_from_input(&input_stream);
         if (lex(&lexer, line) == EXIT_FAILURE) {
             continue;
         }
@@ -188,7 +180,6 @@ int main(const int argc, const char *const argv[]) {
     destroy_lex(&lexer);
     destroy_variables(&vars);
     destroy_parser(&parser);
-    free(line);
     return EXIT_SUCCESS;
 }
 
