@@ -27,6 +27,7 @@
 #include "input_stream.h"
 
 #include <ctype.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,19 +37,29 @@
 
 #include "print_errors.h"
 
-static struct termios old_terminal;
+static struct termios old_terminal = {0};
 
 static void restore_terminal(void) {
     tcsetattr(STDIN_FILENO, TCSANOW, &old_terminal);
 }
 
 static inline void configure_terminal(void) {
-    tcgetattr(STDIN_FILENO, &old_terminal);
-    struct termios new_terminal = old_terminal;
-    new_terminal.c_lflag &= ~ICANON;  // Disable canonical mode
-    new_terminal.c_lflag &= ~ECHO;    // Disable echo
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_terminal);
-    atexit(restore_terminal);  // Even if the application crashes, the terminal must be restored
+    // If the flag ICANON is set, the terminal was already configured
+    if ((old_terminal.c_lflag & ICANON) == 0) {
+        if (tcgetattr(STDIN_FILENO, &old_terminal) != EXIT_SUCCESS) {
+            print_crash_and_exit("When configuring the terminal for the \"Input_Stream\", the function \"tcgetattr()\" failed with error: %s\n", strerror(errno));
+        }
+        struct termios new_terminal = old_terminal;
+        new_terminal.c_lflag &= ~ICANON;  // Disable canonical mode
+        new_terminal.c_lflag &= ~ECHO;    // Disable echo
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &new_terminal) != EXIT_SUCCESS) {
+            print_crash_and_exit("When configuring the terminal for the \"Input_Stream\", the function \"tcsetattr()\" failed with error: %s\n", strerror(errno));
+        }
+        // Even if the application crashes, the terminal must be restored
+        if (atexit(restore_terminal) != EXIT_SUCCESS) {
+            print_crash_and_exit("When configuring the terminal for the \"Input_Stream\", the function \"atexit()\" failed!\n");
+        }
+    }
 }
 
 struct Input_Stream create_input_stream(void) {
@@ -89,21 +100,16 @@ static inline size_t previous_line(const struct Input_Stream *const input_stream
 static inline size_t next_line(const struct Input_Stream *const input_stream, const size_t line_index) {
     size_t next_index = line_index;
     do {
+        if (next_index == input_stream->line_index) {
+            // It reached the current line
+            return input_stream->line_index;
+        }
         next_index++;
         if (next_index >= NUMBER_OF_LINES) {
             next_index = 0;
         }
-        if (next_index == input_stream->line_index) {
-            // There is no next empty line
-            return line_index;
-        }
     } while (is_empty(input_stream->lines[next_index].str));
     return next_index;
-}
-
-static inline void copy_line(struct Input_Stream *const input_stream, const size_t line_index) {
-    memcpy(input_stream->lines[input_stream->line_index].str, input_stream->lines[line_index].str, input_stream->lines[line_index].size);
-    input_stream->lines[input_stream->line_index].size = input_stream->lines[line_index].size;
 }
 
 char *get_line_from_input(struct Input_Stream *input_stream) {
