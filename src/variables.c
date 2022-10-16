@@ -74,11 +74,8 @@ static inline double variable_value(struct Variables *const vars, const int inde
 
 // This function returns zero if found the variable in the list
 int search_variable(struct Variables *const vars, const char *const name, const unsigned int length, int *const index) {
-    if (vars == NULL) {
+    if ((vars == NULL) || (index == NULL)) {
         print_crash_and_exit("Invalid call to function \"search_variable()\"!\n");
-        return -1;
-    }
-    if (index == NULL) {
         return -1;
     }
     if (vars->list.size == 0) {

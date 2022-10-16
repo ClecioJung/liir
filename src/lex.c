@@ -35,6 +35,7 @@
 #include "allocator.h"
 #include "functions.h"
 #include "print_errors.h"
+#include "string_buffer.h"
 
 struct Lexer create_lex(const size_t initial_size) {
     return (struct Lexer){
@@ -87,8 +88,9 @@ static inline void add_delimiter(struct Lexer *const lexer, const char delimiter
     add_token(lexer, tok);
 }
 
-static inline char *add_number(struct Lexer *const lexer, const char *const first, const int column) {
-    char *end = (char *)first;
+static inline int add_number(struct Lexer *const lexer, const struct String line, const int column) {
+    char *first = (char *)&line.data[column];
+    char *end = first;
     double number = strtod(first, &end);
     struct Token tok = {
         .type = TOK_NUMBER,
@@ -96,7 +98,7 @@ static inline char *add_number(struct Lexer *const lexer, const char *const firs
         .number = number,
     };
     add_token(lexer, tok);
-    return end;
+    return (end - first);
 }
 
 static inline void add_function(struct Lexer *const lexer, const int index, const int column) {
@@ -113,66 +115,68 @@ static inline void add_variable(struct Lexer *const lexer, const char *const nam
         .type = TOK_VARIABLE,
         .column = column,
         .name = {
-            .string = (char *)name,
+            .data = (char *)name,
             .length = length,
         },
     };
     add_token(lexer, tok);
 }
 
-static inline char *add_name(struct Lexer *const lexer, const char *const first, const int column) {
-    char *end = (char *)first;
-    while (isalpha(*end) || isdigit(*end) || *end == '_') {
-        end++;
+static inline int add_name(struct Lexer *const lexer, const struct String line, const int column) {
+    int index = column;
+    char c = line.data[index];
+    while ((index < line.length) && (isalpha(c) || isdigit(c) || (c == '_'))) {
+        index++;
+        c = line.data[index];
     }
-    const int length = (end - first);
-    const int function_index = search_function(first, length);
+    const int length = index - column;
+    const int function_index = search_function(&line.data[column], length);
     if (function_index < functions_quantity) {
         add_function(lexer, function_index, column);
     } else {
-        add_variable(lexer, first, length, column);
+        add_variable(lexer, &line.data[column], length, column);
     }
-    return end;
+    return length;
 }
 
-int lex(struct Lexer *const lexer, const char *const line) {
-    if ((lexer == NULL) || (line == NULL)) {
+int lex(struct Lexer *const lexer, const struct String line) {
+    if (lexer == NULL) {
         print_crash_and_exit("Invalid call to function \"lex()\"!\n");
         return EXIT_FAILURE;
     }
     allocator_free_all(&lexer->tokens);
-    const char *c = line;
-    while (*c != '\0') {
-        if (isdigit(*c) || *c == '.') {
-            c = add_number(lexer, c, (c - line));
+    for (int i = 0; i < line.length;) {
+        const char c = line.data[i];
+        if (isdigit(c) || c == '.') {
+            i += add_number(lexer, line, i);
             continue;
-        } else if (isalpha(*c) || *c == '_') {
-            c = add_name(lexer, c, (c - line));
+        } else if (isalpha(c) || c == '_') {
+            i += add_name(lexer, line, i);
             continue;
-        } else if (isspace(*c)) {
-            c++;
+        } else if (isspace(c)) {
+            i++;
             continue;
         }
-        switch (*c) {
+        switch (c) {
             case '+':
             case '-':
             case '*':
             case '/':
             case '^':
             case '=': {
-                add_op(lexer, *c, (c - line));
-                c++;
+                add_op(lexer, c, i);
+                i++;
                 break;
             }
             case '(':
             case ')': {
-                add_delimiter(lexer, *c, (c - line));
-                c++;
+                add_delimiter(lexer, c, i);
+                i++;
                 break;
             }
             default: {
-                print_column(c - line);
-                print_error("Unrecognized character at lexical analysis: %s\n", c);
+                print_column(i);
+                print_error("Unrecognized character at lexical analysis: %c\n", c);
                 return EXIT_FAILURE;
             }
         }
@@ -200,7 +204,7 @@ void print_token(const struct Token tok) {
             break;
         case TOK_VARIABLE:
             printf("VARIABLE  ");
-            printf("%.*s\n", tok.name.length, tok.name.string);
+            printf("%.*s\n", tok.name.length, tok.name.data);
             break;
         case TOK_FUNCTION:
             printf("FUNCTION  ");

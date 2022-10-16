@@ -324,7 +324,7 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
                     }
                     const double result = evaluate(parser, get_right_idx(parser, node_idx), status);
                     if (*status != Eval_Error) {
-                        return assign_variable(parser->vars, get_tok(parser, get_left_idx(parser, node_idx)).name.string, get_tok(parser, get_left_idx(parser, node_idx)).name.length, result);
+                        return assign_variable(parser->vars, get_tok(parser, get_left_idx(parser, node_idx)).name.data, get_tok(parser, get_left_idx(parser, node_idx)).name.length, result);
                     } else {
                         return NAN;
                     }
@@ -371,9 +371,9 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
         }
         case TOK_VARIABLE: {
             int index;
-            if (search_variable(parser->vars, get_tok(parser, node_idx).name.string, get_tok(parser, node_idx).name.length, &index) != 0) {
+            if (search_variable(parser->vars, get_tok(parser, node_idx).name.data, get_tok(parser, node_idx).name.length, &index) != 0) {
                 print_column(get_tok(parser, node_idx).column);
-                print_error("Unrecognized name: \"%.*s\"!\n", get_tok(parser, node_idx).name.length, get_tok(parser, node_idx).name.string);
+                print_error("Unrecognized name: \"%.*s\"!\n", get_tok(parser, node_idx).name.length, get_tok(parser, node_idx).name.data);
                 *status = Eval_Error;
                 return NAN;
             }

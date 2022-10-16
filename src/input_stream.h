@@ -27,23 +27,15 @@
 #ifndef __INPUT_STREAM
 #define __INPUT_STREAM
 
-#include <stdlib.h>
-
-#define NUMBER_OF_LINES 16
-#define LINE_SIZE 256
-
-struct Line {
-    char str[LINE_SIZE];
-    size_t size;
-};
+#include "string_buffer.h"
 
 struct Input_Stream {
-    size_t line_index;
-    struct Line lines[NUMBER_OF_LINES];
+    struct String_Buffer lines;
 };
 
 struct Input_Stream create_input_stream(void);
-char *get_line_from_input(struct Input_Stream *input_stream);
+struct String get_line_from_input(struct Input_Stream *const input_stream);
+void print_previous_lines(struct Input_Stream *const input_stream);
 
 #endif  // __INPUT_STREAM
 

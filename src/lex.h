@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include "allocator.h"
+#include "string_buffer.h"
 
 enum Tok_Types {
     TOK_OPERATOR,        // +, -, *, /, ^ and =
@@ -39,11 +40,6 @@ enum Tok_Types {
     TOK_NUMBER,
     TOK_VARIABLE,
     TOK_FUNCTION,
-};
-
-struct String {
-    char *string;
-    unsigned int length;
 };
 
 struct Token {
@@ -64,7 +60,7 @@ struct Lexer {
 
 struct Lexer create_lex(const size_t initial_size);
 void destroy_lex(struct Lexer *const lexer);
-int lex(struct Lexer *const lexer, const char *const line);
+int lex(struct Lexer *const lexer, const struct String line);
 void print_token(const struct Token tok);
 void print_tokens(struct Lexer *const lexer);
 
