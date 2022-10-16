@@ -21,63 +21,43 @@
 // SOFTWARE.
 
 //------------------------------------------------------------------------------
-// HEADER
+// SOURCE
 //------------------------------------------------------------------------------
 
-#ifndef __STRING_BUFFER
-#define __STRING_BUFFER
+#include "string_buffer.h"
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "sized_string.h"
 
-// Data structure for storing strings sequentially in a static size buffer
-// It is a XOR double linked list, where each node is a string
-// Since the buffers used in this application are relativelly small, we an use indexes of 2 bytes
+void print_string_to(FILE *const file, const struct String str) {
+    fprintf(file, "%.*s", str.length, str.data);
+}
 
-typedef int16_t String_Node_Index;
+void print_string(const struct String str) {
+    print_string_to(stdout, str);
+}
 
-#define INVALID_STRING_INDEX ((String_Node_Index)(-1))
+struct String create_string(char *const cstr) {
+    return (struct String){
+        .data = cstr,
+        .length = strlen(cstr),
+    };
+}
 
-struct String_Node {
-    String_Node_Index xor_index;
-    // String definition
-    String_Length length;
-    char data[];
-};
-
-// It should be enougth for everyone ;)
-#define BUFFER_SIZE 4096
-
-struct String_Buffer {
-    String_Node_Index current_index;  // Index for the string currently being edited
-    String_Node_Index last_index;     // Index to the last known string
-    uint8_t buf[BUFFER_SIZE];
-};
-
-struct String_Node *get_node_from_index(const struct String_Buffer *const string_buffer, const String_Node_Index string_index);
-struct String_Node *get_current_node(const struct String_Buffer *const string_buffer);
-struct String_Node *get_last_node(const struct String_Buffer *const string_buffer);
-String_Node_Index get_next_node(const struct String_Buffer *const string_buffer, const String_Node_Index node_index, const String_Node_Index previous_index);
-String_Node_Index get_previous_node(const struct String_Buffer *const string_buffer, const String_Node_Index node_index, const String_Node_Index next_index);
-struct String_Buffer create_string_buffer(void);
-struct String get_string_from_node(struct String_Node *const node);
-void update_current_string(struct String_Buffer *const string_buffer);
-void remove_char_at(struct String_Buffer *const string_buffer, const String_Length position);
-void copy_string_at_index(struct String_Buffer *const string_buffer, const String_Node_Index string_index);
-// This function return true if an error occurred
-bool add_char_at(struct String_Buffer *const string_buffer, const char c, const String_Length position);
-
-void print_chars_at_index_to(FILE *const file, const struct String_Buffer *const string_buffer, const String_Node_Index node_index, const String_Length position);
-void print_chars_at_index(const struct String_Buffer *const string_buffer, const String_Node_Index node_index, const String_Length position);
-void print_string_at_index_to(FILE *const file, const struct String_Buffer *const string_buffer, const String_Node_Index node_index);
-void print_string_at_index(const struct String_Buffer *const string_buffer, const String_Node_Index node_index);
-void print_string_buffer_to(FILE *const file, const struct String_Buffer *const string_buffer);
-void print_string_buffer(const struct String_Buffer *const string_buffer);
-
-#endif  // __STRING_BUFFER
+bool string_is_empty(const struct String *const str) {
+    for (String_Length i = 0; i < str->length; i++) {
+        if (!isspace(str->data[i])) {
+            return false;
+        }
+    }
+    return true;
+}
 
 //------------------------------------------------------------------------------
 // END

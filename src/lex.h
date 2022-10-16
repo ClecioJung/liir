@@ -31,7 +31,7 @@
 #include <stdlib.h>
 
 #include "allocator.h"
-#include "string_buffer.h"
+#include "sized_string.h"
 
 enum Tok_Types {
     TOK_OPERATOR,        // +, -, *, /, ^ and =

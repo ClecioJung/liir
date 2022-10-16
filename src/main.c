@@ -36,6 +36,7 @@
 #include "lex.h"
 #include "parser.h"
 #include "print_errors.h"
+#include "sized_string.h"
 #include "variables.h"
 
 enum Actions {

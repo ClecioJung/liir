@@ -35,7 +35,7 @@
 #include "allocator.h"
 #include "functions.h"
 #include "print_errors.h"
-#include "string_buffer.h"
+#include "sized_string.h"
 
 struct Lexer create_lex(const size_t initial_size) {
     return (struct Lexer){
