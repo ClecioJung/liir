@@ -1,4 +1,6 @@
 liir
+release/
+debug/
 .deps/
 .obj/
 .vscode/
