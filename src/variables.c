@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "print_errors.h"
+#include "sized_string.h"
 
 struct Variables create_variables(const size_t initial_list_size, const size_t initial_name_size) {
     return (struct Variables){
@@ -73,7 +74,7 @@ static inline double variable_value(struct Variables *const vars, const int inde
 }
 
 // This function returns zero if found the variable in the list
-int search_variable(struct Variables *const vars, const char *const name, const unsigned int length, int *const index) {
+int search_variable(struct Variables *const vars, const struct String name, int *const index) {
     if ((vars == NULL) || (index == NULL)) {
         print_crash_and_exit("Invalid call to function \"search_variable()\"!\n");
         return -1;
@@ -89,7 +90,7 @@ int search_variable(struct Variables *const vars, const char *const name, const 
     int comp = -1;
     while (low <= high) {
         *index = (low + high) / 2;
-        comp = strncmp(name, variable_name(vars, *index), length);
+        comp = strncmp(name.data, variable_name(vars, *index), name.length);
         if (comp < 0) {
             high = *index - 1;
         } else if (comp > 0) {
@@ -101,7 +102,7 @@ int search_variable(struct Variables *const vars, const char *const name, const 
     return comp;
 }
 
-void new_variable(struct Variables *const vars, const int index, char *const name, const unsigned int length, const double value) {
+void new_variable(struct Variables *const vars, const int index, const struct String name, const double value) {
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"new_variable()\"!\n");
         return;
@@ -114,26 +115,26 @@ void new_variable(struct Variables *const vars, const int index, char *const nam
         current->value = previous->value;
     }
     struct Variable *const new_var = variable(vars, index);
-    new_var->name_idx = allocator_new_array(&vars->names, length + 1);
+    new_var->name_idx = allocator_new_array(&vars->names, name.length + 1);
     new_var->value = value;
     char *const var_name = variable_name(vars, index);
-    strncpy(var_name, name, length);
-    var_name[length] = '\0';
+    strncpy(var_name, name.data, name.length);
+    var_name[name.length] = '\0';
 }
 
-double assign_variable(struct Variables *const vars, char *const name, const unsigned int length, const double value) {
+double assign_variable(struct Variables *const vars, const struct String name, const double value) {
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"assign_variable()\"!\n");
         return NAN;
     }
     int index;
-    const int search = search_variable(vars, name, length, &index);
+    const int search = search_variable(vars, name, &index);
     if (search != 0) {
         // Insert new variable in alphabetical order
         if (search > 0) {
             index++;
         }
-        new_variable(vars, index, name, length, value);
+        new_variable(vars, index, name, value);
     } else {
         // Variable already exist
         variable(vars, index)->value = value;
@@ -141,9 +142,9 @@ double assign_variable(struct Variables *const vars, char *const name, const uns
     return value;
 }
 
-double get_variable(struct Variables *const vars, const int index) {
+double get_variable_value(struct Variables *const vars, const int index) {
     if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"get_variable()\"!\n");
+        print_crash_and_exit("Invalid call to function \"get_variable_value()\"!\n");
         return NAN;
     }
     if (allocator_is_invalid(vars->list, index)) {

@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #include "allocator.h"
+#include "sized_string.h"
 
 struct Variable {
     int64_t name_idx;
@@ -46,10 +47,10 @@ struct Variables {
 struct Variables create_variables(const size_t initial_list_size, const size_t initial_name_size);
 void destroy_variables(struct Variables *const vars);
 void clear_variables(struct Variables *const vars);
-int search_variable(struct Variables *const vars, const char *const name, const unsigned int length, int *const index);
-void new_variable(struct Variables *const vars, const int index, char *const name, const unsigned int length, const double value);
-double assign_variable(struct Variables *const vars, char *const name, const unsigned int length, const double value);
-double get_variable(struct Variables *const vars, const int index);
+int search_variable(struct Variables *const vars, const struct String name, int *const index);
+void new_variable(struct Variables *const vars, const int index, const struct String name, const double value);
+double assign_variable(struct Variables *const vars, const struct String name, const double value);
+double get_variable_value(struct Variables *const vars, const int index);
 void print_variables(struct Variables *const vars);
 bool variable_list_is_empty(struct Variables *const vars);
 

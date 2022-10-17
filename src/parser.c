@@ -34,6 +34,7 @@
 #include "functions.h"
 #include "lex.h"
 #include "print_errors.h"
+#include "sized_string.h"
 #include "variables.h"
 
 struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size) {
@@ -324,7 +325,7 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
                     }
                     const double result = evaluate(parser, get_right_idx(parser, node_idx), status);
                     if (*status != Eval_Error) {
-                        return assign_variable(parser->vars, get_tok(parser, get_left_idx(parser, node_idx)).name.data, get_tok(parser, get_left_idx(parser, node_idx)).name.length, result);
+                        return assign_variable(parser->vars, get_tok(parser, get_left_idx(parser, node_idx)).name, result);
                     } else {
                         return NAN;
                     }
@@ -371,13 +372,14 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
         }
         case TOK_VARIABLE: {
             int index;
-            if (search_variable(parser->vars, get_tok(parser, node_idx).name.data, get_tok(parser, node_idx).name.length, &index) != 0) {
+            const struct String name = get_tok(parser, node_idx).name;
+            if (search_variable(parser->vars, name, &index) != 0) {
                 print_column(get_tok(parser, node_idx).column);
-                print_error("Unrecognized name: \"%.*s\"!\n", get_tok(parser, node_idx).name.length, get_tok(parser, node_idx).name.data);
+                print_error("Unrecognized name: \"%.*s\"!\n", name.length, name.data);
                 *status = Eval_Error;
                 return NAN;
             }
-            return get_variable(parser->vars, index);
+            return get_variable_value(parser->vars, index);
         }
         case TOK_DELIMITER:
             print_column(get_tok(parser, node_idx).column);
