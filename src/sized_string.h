@@ -46,6 +46,7 @@ struct String {
 void print_string_to(FILE *const file, const struct String str);
 void print_string(const struct String str);
 struct String create_string(char *const cstr);
+struct String create_sized_string(char *const str, const String_Length length);
 bool string_is_empty(const struct String *const str);
 
 #endif  // __SIZED_STRING

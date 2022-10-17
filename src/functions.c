@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "variables.h"
+#include "sized_string.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -267,12 +268,12 @@ const struct Function functions[] = {
 
 const int functions_quantity = (sizeof(functions) / sizeof(functions[0]));
 
-int search_function(const char *const name, const int length) {
+int search_function(const struct String name) {
     // Sequential search in the functions list
     for (int i = 0; i < functions_quantity; i++) {
         const int function_length = strlen(functions[i].name);
-        if (length == function_length) {
-            if (!strncmp(name, functions[i].name, length)) {
+        if (name.length == function_length) {
+            if (!strncmp(name.data, functions[i].name, name.length)) {
                 return i;
             }
         }

@@ -130,7 +130,8 @@ static inline int add_name(struct Lexer *const lexer, const struct String line, 
         c = line.data[index];
     }
     const int length = index - column;
-    const int function_index = search_function(&line.data[column], length);
+    const struct String name = create_sized_string(&line.data[column], length);
+    const int function_index = search_function(name);
     if (function_index < functions_quantity) {
         add_function(lexer, function_index, column);
     } else {

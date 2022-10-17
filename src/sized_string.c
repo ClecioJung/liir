@@ -24,7 +24,7 @@
 // SOURCE
 //------------------------------------------------------------------------------
 
-#include "string_buffer.h"
+#include "sized_string.h"
 
 #include <ctype.h>
 #include <stdbool.h>
@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sized_string.h"
+#include "string_buffer.h"
 
 void print_string_to(FILE *const file, const struct String str) {
     fprintf(file, "%.*s", str.length, str.data);
@@ -47,6 +47,13 @@ struct String create_string(char *const cstr) {
     return (struct String){
         .data = cstr,
         .length = strlen(cstr),
+    };
+}
+
+struct String create_sized_string(char *const str, const String_Length length) {
+    return (struct String){
+        .data = str,
+        .length = length,
     };
 }
 
