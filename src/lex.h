@@ -48,8 +48,8 @@ struct Token {
     union {
         char op;
         double number;
-        struct String name;
         int function_index;
+        struct String name;
     };
 };
 
