@@ -29,6 +29,7 @@
 
 #include <stdbool.h>
 
+#include "sized_string.h"
 #include "variables.h"
 
 typedef double (*Function_Pointer)(struct Variables *const vars, double arg);
@@ -44,7 +45,7 @@ struct Function {
 extern const struct Function functions[];
 extern const int functions_quantity;
 
-int search_function(const char *const name, const int length);
+int search_function(const struct String name);
 void print_functions(void);
 
 #endif  // __FUNCTIONS

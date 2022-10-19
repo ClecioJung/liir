@@ -27,6 +27,7 @@
 #include "lex.h"
 
 #include <ctype.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,129 +58,101 @@ void add_token(struct Lexer *const lexer, const struct Token tok) {
     *token = tok;
 }
 
-static inline void add_op(struct Lexer *const lexer, const char op, const int column) {
-    struct Token tok = (struct Token){
-        .type = TOK_OPERATOR,
-        .column = column,
-        .op = op,
-    };
-    // Unary operator
-    if ((op == '-') && (lexer->tokens.size > 0)) {
-        const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
-        if ((last_token.type == TOK_OPERATOR) ||
-            (last_token.type == TOK_UNARY_OPERATOR) ||
-            (last_token.type == TOK_DELIMITER)) {
-            tok.type = TOK_UNARY_OPERATOR;
-        } else if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
-            tok.type = TOK_UNARY_OPERATOR;
-            print_column(last_token.column);
-            print_warning("Consider using parentheses to pass arguments to functions, so ambiguities are avoided!\n");
+struct String parse_name(const struct String string) {
+    int index = 0;
+    for (; index < string.length; index++) {
+        const char c = string.data[index];
+        if (!isalnum(c) && (c != '_')) {
+            break;
         }
     }
-    add_token(lexer, tok);
-}
-
-static inline void add_delimiter(struct Lexer *const lexer, const char delimiter, const int column) {
-    struct Token tok = (struct Token){
-        .type = TOK_DELIMITER,
-        .column = column,
-        .op = delimiter,
+    return (struct String){
+        .data = string.data,
+        .length = index,
     };
-    add_token(lexer, tok);
 }
 
-static inline int add_number(struct Lexer *const lexer, const struct String line, const int column) {
-    char *first = (char *)&line.data[column];
-    char *end = first;
-    double number = strtod(first, &end);
-    struct Token tok = {
-        .type = TOK_NUMBER,
-        .column = column,
-        .number = number,
-    };
-    add_token(lexer, tok);
-    return (end - first);
+void advance_line(struct String *const line, int *const column, const int value) {
+    line->data += value;
+    line->length -= value;
+    *column += value;
 }
 
-static inline void add_function(struct Lexer *const lexer, const int index, const int column) {
-    struct Token tok = {
-        .type = TOK_FUNCTION,
-        .column = column,
-        .function_index = index,
-    };
-    add_token(lexer, tok);
-}
-
-static inline void add_variable(struct Lexer *const lexer, const char *const name, const int length, const int column) {
-    struct Token tok = {
-        .type = TOK_VARIABLE,
-        .column = column,
-        .name = {
-            .data = (char *)name,
-            .length = length,
-        },
-    };
-    add_token(lexer, tok);
-}
-
-static inline int add_name(struct Lexer *const lexer, const struct String line, const int column) {
-    int index = column;
-    char c = line.data[index];
-    while ((index < line.length) && (isalpha(c) || isdigit(c) || (c == '_'))) {
-        index++;
-        c = line.data[index];
-    }
-    const int length = index - column;
-    const int function_index = search_function(&line.data[column], length);
-    if (function_index < functions_quantity) {
-        add_function(lexer, function_index, column);
-    } else {
-        add_variable(lexer, &line.data[column], length, column);
-    }
-    return length;
-}
-
-int lex(struct Lexer *const lexer, const struct String line) {
+int lex(struct Lexer *const lexer, struct String line) {
     if (lexer == NULL) {
         print_crash_and_exit("Invalid call to function \"lex()\"!\n");
         return EXIT_FAILURE;
     }
     allocator_free_all(&lexer->tokens);
-    for (int i = 0; i < line.length;) {
-        const char c = line.data[i];
-        if (isdigit(c) || c == '.') {
-            i += add_number(lexer, line, i);
+    for (int column = 0; line.length > 0;) {
+        const char c = *line.data;
+        struct Token tok = (struct Token){
+            .column = column,
+        };
+        if (isspace(c)) {
+            advance_line(&line, &column, 1);
             continue;
+        } else if (isdigit(c) || c == '.') {
+            String_Length length = -1;
+            tok.number = string_to_double(line, &length);
+            advance_line(&line, &column, length);
+            tok.type = TOK_NUMBER;
         } else if (isalpha(c) || c == '_') {
-            i += add_name(lexer, line, i);
-            continue;
-        } else if (isspace(c)) {
-            i++;
-            continue;
+            const struct String name = parse_name(line);
+            const int function_index = search_function(name);
+            if (function_index < functions_quantity) {
+                tok.type = TOK_FUNCTION;
+                tok.function_index = function_index;
+            } else {
+                tok.type = TOK_VARIABLE;
+                tok.name = name;
+            }
+            advance_line(&line, &column, name.length);
+        } else {
+            switch (c) {
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case '^':
+                case '=': {
+                    tok.type = TOK_OPERATOR;
+                    tok.op = c;
+                    // Check for unary operator
+                    if (c == '-') {
+                        if (lexer->tokens.size == 0) {
+                            tok.type = TOK_UNARY_OPERATOR;
+                        } else {
+                            const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
+                            if ((last_token.type == TOK_OPERATOR) ||
+                                (last_token.type == TOK_UNARY_OPERATOR) ||
+                                (last_token.type == TOK_DELIMITER)) {
+                                tok.type = TOK_UNARY_OPERATOR;
+                            } else if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
+                                tok.type = TOK_UNARY_OPERATOR;
+                                print_column(last_token.column);
+                                print_warning("Consider using parentheses to pass arguments to functions, so ambiguities are avoided!\n");
+                            }
+                        }
+                    }
+                    advance_line(&line, &column, 1);
+                    break;
+                }
+                case '(':
+                case ')': {
+                    tok.type = TOK_DELIMITER;
+                    tok.op = c;
+                    advance_line(&line, &column, 1);
+                    break;
+                }
+                default: {
+                    print_column(column);
+                    print_error("Unrecognized character at lexical analysis: %c\n", c);
+                    return EXIT_FAILURE;
+                }
+            }
         }
-        switch (c) {
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-            case '^':
-            case '=': {
-                add_op(lexer, c, i);
-                i++;
-                break;
-            }
-            case '(':
-            case ')': {
-                add_delimiter(lexer, c, i);
-                i++;
-                break;
-            }
-            default: {
-                print_column(i);
-                print_error("Unrecognized character at lexical analysis: %c\n", c);
-                return EXIT_FAILURE;
-            }
-        }
+        add_token(lexer, tok);
     }
     return EXIT_SUCCESS;
 }
@@ -204,7 +177,8 @@ void print_token(const struct Token tok) {
             break;
         case TOK_VARIABLE:
             printf("VARIABLE  ");
-            printf("%.*s\n", tok.name.length, tok.name.data);
+            print_string(tok.name);
+            printf("\n");
             break;
         case TOK_FUNCTION:
             printf("FUNCTION  ");
