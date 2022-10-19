@@ -72,18 +72,6 @@ struct String parse_name(const struct String string) {
     };
 }
 
-// This function doesn't check for the stirng size!
-// This is dangerous! We must fix this soon!
-double parse_number(const struct String string, int *const length) {
-    char *first = string.data;
-    char *end = first;
-    double number = strtod(first, &end);
-    if (length != NULL) {
-        *length = (end - first);
-    }
-    return number;
-}
-
 void advance_line(struct String *const line, int *const column, const int value) {
     line->data += value;
     line->length -= value;
@@ -105,8 +93,8 @@ int lex(struct Lexer *const lexer, struct String line) {
             advance_line(&line, &column, 1);
             continue;
         } else if (isdigit(c) || c == '.') {
-            int length = -1;
-            tok.number = parse_number(line, &length);
+            String_Length length = -1;
+            tok.number = string_to_double(line, &length);
             advance_line(&line, &column, length);
             tok.type = TOK_NUMBER;
         } else if (isalpha(c) || c == '_') {
@@ -130,17 +118,21 @@ int lex(struct Lexer *const lexer, struct String line) {
                 case '=': {
                     tok.type = TOK_OPERATOR;
                     tok.op = c;
-                    // Unary operator
-                    if ((c == '-') && (lexer->tokens.size > 0)) {
-                        const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
-                        if ((last_token.type == TOK_OPERATOR) ||
-                            (last_token.type == TOK_UNARY_OPERATOR) ||
-                            (last_token.type == TOK_DELIMITER)) {
+                    // Check for unary operator
+                    if (c == '-') {
+                        if (lexer->tokens.size == 0) {
                             tok.type = TOK_UNARY_OPERATOR;
-                        } else if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
-                            tok.type = TOK_UNARY_OPERATOR;
-                            print_column(last_token.column);
-                            print_warning("Consider using parentheses to pass arguments to functions, so ambiguities are avoided!\n");
+                        } else {
+                            const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
+                            if ((last_token.type == TOK_OPERATOR) ||
+                                (last_token.type == TOK_UNARY_OPERATOR) ||
+                                (last_token.type == TOK_DELIMITER)) {
+                                tok.type = TOK_UNARY_OPERATOR;
+                            } else if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
+                                tok.type = TOK_UNARY_OPERATOR;
+                                print_column(last_token.column);
+                                print_warning("Consider using parentheses to pass arguments to functions, so ambiguities are avoided!\n");
+                            }
                         }
                     }
                     advance_line(&line, &column, 1);

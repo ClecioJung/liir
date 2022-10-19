@@ -48,6 +48,8 @@ void print_string(const struct String str);
 struct String create_string(char *const cstr);
 struct String create_sized_string(char *const str, const String_Length length);
 bool string_is_empty(const struct String *const str);
+long int string_to_integer(const struct String string, String_Length *const length);
+double string_to_double(const struct String string, String_Length *const length);
 
 #endif  // __SIZED_STRING
 
