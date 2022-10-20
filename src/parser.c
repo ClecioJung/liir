@@ -218,8 +218,11 @@ int64_t parse_parentheses(struct Parser *const parser, size_t *const tk_idx) {
             (*tk_idx)++;
             if (*tk_idx < parser->lexer->tokens.size) {
                 last_parentheses_idx = parse_parentheses(parser, tk_idx);
-                if (insert_node_right(parser, &head_idx, last_parentheses_idx)) {
-                    return -1;
+                // If the returned value is negative, there is no new node to insert
+                if (last_parentheses_idx >= 0) {
+                    if (insert_node_right(parser, &head_idx, last_parentheses_idx)) {
+                        return -1;
+                    }
                 }
             }
             if (*tk_idx >= parser->lexer->tokens.size) {
