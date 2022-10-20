@@ -224,19 +224,24 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                     // We convert tab to four spaces, because it is easiear to handle
                     unsigned int tab_to_spaces = 4;
                     printf("%*s", tab_to_spaces, "");
+                    if (position < length) {
+                        // Update line to the output
+                        print_chars_at_index(&input_stream->lines, line_index, position);
+                        // Restores cursor position
+                        printf("\033[%dG", (int)(position + command.length + tab_to_spaces + 1));
+                    }
                     while (tab_to_spaces--) {
                         if (add_char_at(&input_stream->lines, ' ', position)) {
                             putchar('\n');
                             print_error("You typed a expression that consumed all the input buffer! You may try again...\n\n");
                             print_string(command);
-                            line_index = input_stream->lines.current_index;
                             position = 0;
                         } else {
-                            // The current line address may have changed when merging lines
-                            line_index = input_stream->lines.current_index;
                             position++;
                         }
                     }
+                    // The current line address may have changed when merging lines
+                    line_index = input_stream->lines.current_index;
                 } break;
                 default:
                     putchar(c);  // Echo character
