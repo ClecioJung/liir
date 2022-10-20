@@ -56,7 +56,7 @@ void destroy_parser(struct Parser *const parser) {
     allocator_delete(&parser->nodes);
 }
 
-int64_t new_node(struct Parser *const parser, const struct Token tok) {
+static int64_t new_node(struct Parser *const parser, const struct Token tok) {
     int64_t index = allocator_new(&parser->nodes);
     struct Token_Node *const node = allocator_get(parser->nodes, index);
     *node = (struct Token_Node){
@@ -113,10 +113,6 @@ static int get_op_precedence(const char op) {
 }
 
 static inline bool check_parser_right_error(struct Parser *const parser, const int64_t previous_idx, const int64_t current_idx) {
-    if (is_invalid_idx(parser, previous_idx) || is_invalid_idx(parser, current_idx)) {
-        print_crash_and_exit("Invalid call to function \"check_parser_right_error()\"!\n");
-        return true;
-    }
     struct Token previous_tok = get_tok(parser, previous_idx);
     struct Token current_tok = get_tok(parser, current_idx);
     if ((previous_tok.type == TOK_NUMBER) || (previous_tok.type == TOK_VARIABLE)) {
@@ -161,7 +157,7 @@ static inline bool check_parser_right_error(struct Parser *const parser, const i
     return false;
 }
 
-bool insert_node_right(struct Parser *const parser, int64_t *const head_idx, const int64_t node_idx) {
+static bool insert_node_right(struct Parser *const parser, int64_t *const head_idx, const int64_t node_idx) {
     if (*head_idx < 0) {
         *head_idx = node_idx;
     } else {
@@ -177,7 +173,7 @@ bool insert_node_right(struct Parser *const parser, int64_t *const head_idx, con
     return false;
 }
 
-bool insert_new_op(struct Parser *const parser, int64_t *const head_idx, const int64_t node_idx, const int64_t max_idx) {
+static inline bool insert_new_op(struct Parser *const parser, int64_t *const head_idx, const int64_t node_idx, const int64_t max_idx) {
     if (*head_idx < 0) {
         *head_idx = node_idx;
     } else {
@@ -205,15 +201,19 @@ bool insert_new_op(struct Parser *const parser, int64_t *const head_idx, const i
     return false;
 }
 
-int64_t parse_parentheses(struct Parser *const parser, size_t *const tk_idx) {
-    if (tk_idx == NULL) {
-        print_crash_and_exit("Invalid call to function \"parse_parentheses()\"!\n");
-        return -1;
-    }
+static int64_t parse_parentheses(struct Parser *const parser, size_t *const tk_idx) {
     int64_t head_idx = -1;
     int64_t last_parentheses_idx = -1;
     while ((*tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, *tk_idx)->op != ')')) {
         const struct Token current_token = *get_lex_tok(parser, *tk_idx);
+        if (parser->lexer->tokens.size >= 1) {
+            const struct Token previous_token = *get_lex_tok(parser, (parser->lexer->tokens.size - 1));
+            if (previous_token.type == TOK_FUNCTION) {
+                print_column(current_token.column);
+                print_error("All functions must be followed by parentheses!\n");
+                return -1;
+            }
+        }
         if ((current_token.type == TOK_DELIMITER) && (current_token.op == '(')) {
             (*tk_idx)++;
             if (*tk_idx < parser->lexer->tokens.size) {
@@ -261,6 +261,14 @@ int64_t parse(struct Parser *const parser) {
         print_column(get_lex_tok(parser, tk_idx)->column);
         print_error("Mismatched delimiters! Unexpected closing parentheses!\n");
         return -1;
+    }
+    if ((head_idx >= 0) && (tk_idx == parser->lexer->tokens.size) && (parser->lexer->tokens.size >= 1)) {
+        const struct Token last_token = *get_lex_tok(parser, (parser->lexer->tokens.size - 1));
+        if (last_token.type == TOK_FUNCTION) {
+            print_column(last_token.column);
+            print_error("All functions must be folowed by parentheses!\n");
+            return -1;
+        }
     }
     return head_idx;
 }
