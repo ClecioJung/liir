@@ -180,6 +180,9 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                 copy_string_at_index(&input_stream->lines, line_index);
                 // The current line address may have changed when merging lines
                 line_index = input_stream->lines.current_index;
+                // Reset auxiliar variables used to iterate over the linked list of strings
+                previous_direction = true;
+                auxiliar_index = INVALID_STRING_INDEX;
             }
             struct String_Node *const node = get_current_node(&input_stream->lines);
             const String_Length length = node->length;
