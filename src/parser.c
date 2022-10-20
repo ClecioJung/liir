@@ -91,6 +91,10 @@ static inline int64_t is_invalid_idx(struct Parser *const parser, int64_t index)
     return allocator_is_invalid(parser->nodes, index);
 }
 
+static inline struct Token *get_lex_tok(struct Parser *const parser, int64_t index) {
+    return allocator_get(parser->lexer->tokens, index);
+}
+
 static int get_op_precedence(const char op) {
     const char precedence[] = {
         '^',
@@ -208,13 +212,15 @@ int64_t parse_parentheses(struct Parser *const parser, size_t *const tk_idx) {
     }
     int64_t head_idx = -1;
     int64_t last_parentheses_idx = -1;
-    while ((*tk_idx < parser->lexer->tokens.size) && (((struct Token *)parser->lexer->tokens.data)[*tk_idx].op != ')')) {
-        const struct Token current_token = ((struct Token *)parser->lexer->tokens.data)[*tk_idx];
+    while ((*tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, *tk_idx)->op != ')')) {
+        const struct Token current_token = *get_lex_tok(parser, *tk_idx);
         if ((current_token.type == TOK_DELIMITER) && (current_token.op == '(')) {
             (*tk_idx)++;
-            last_parentheses_idx = parse_parentheses(parser, tk_idx);
-            if (insert_node_right(parser, &head_idx, last_parentheses_idx)) {
-                return -1;
+            if (*tk_idx < parser->lexer->tokens.size) {
+                last_parentheses_idx = parse_parentheses(parser, tk_idx);
+                if (insert_node_right(parser, &head_idx, last_parentheses_idx)) {
+                    return -1;
+                }
             }
             if (*tk_idx >= parser->lexer->tokens.size) {
                 print_column(current_token.column);
@@ -248,8 +254,8 @@ int64_t parse(struct Parser *const parser) {
     allocator_free_all(&parser->nodes);
     size_t tk_idx = 0;
     int64_t head_idx = parse_parentheses(parser, &tk_idx);
-    if ((tk_idx < parser->lexer->tokens.size) && (((struct Token *)parser->lexer->tokens.data)[tk_idx].op == ')')) {
-        print_column(((struct Token *)parser->lexer->tokens.data)[tk_idx].column);
+    if ((tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, tk_idx)->op == ')')) {
+        print_column(get_lex_tok(parser, tk_idx)->column);
         print_error("Mismatched delimiters! Unexpected closing parentheses!\n");
         return -1;
     }
