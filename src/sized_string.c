@@ -69,30 +69,40 @@ bool string_is_empty(const struct String *const str) {
     return true;
 }
 
-long int string_to_integer(const struct String string, String_Length *const length) {
-    const int base = 10;
+// Parses a integer number using base 10, 16, 8 or 2
+static long int string_to_int_base(const char *const data, const String_Length length, const int base, String_Length *const num_len) {
     long int number = 0;
     String_Length index = 0;
-    for (; index < string.length; index++) {
-        const char c = string.data[index];
+    for (; index < length; index++) {
+        const char c = data[index];
+        int digit = 0;
         if (isdigit(c)) {
-            const int digit = c - '0';
-            if (number <= LONG_MAX / base) {
-                number = base * number + digit;
-            } else {
-                // Overflow detected
-                // In this case we return the maximum positive number that a long int can store
-                // We continue the loop, in order to parse all the number
-                number = LONG_MAX;
+            digit = c - '0';
+            if (digit >= base) {  // Check if we have a invalid digit for the specified base
+                break;
             }
+        } else if ((base == 16) && isxdigit(c)) {
+            digit = tolower(c) - 'a' + 10;
         } else {
             break;
         }
+        if (number <= LONG_MAX / base) {
+            number = base * number + digit;
+        } else {
+            // Overflow detected
+            // In this case we return the maximum positive number that a long int can store
+            // We continue the loop, in order to parse all the number
+            number = LONG_MAX;
+        }
     }
-    if (length != NULL) {
-        *length = index;
+    if (num_len != NULL) {
+        *num_len = index;
     }
     return number;
+}
+
+long int string_to_integer(const struct String string, String_Length *const num_len) {
+    return string_to_int_base(string.data, string.length, 10, num_len);
 }
 
 // Function used by string_to_double
@@ -121,7 +131,7 @@ static inline double scale_radix_exp(double x, const int radix, long int exponen
 // libc does not have a function to convert sized strings to floating point,
 // so I had to implement my own.
 // Based on: https://github.com/gagern/gnulib/blob/master/lib/strtod.c
-double string_to_double(const struct String string, String_Length *const length) {
+double string_to_double(const struct String string, String_Length *const num_len) {
     const int base = 10;
     double number = 0.0;
     bool dotted = false;
@@ -148,24 +158,66 @@ double string_to_double(const struct String string, String_Length *const length)
             break;
         }
     }
+    // Parses the exponent
     if (((index + 1) < string.length) && tolower(string.data[index]) == 'e') {
-        const char c = string.data[index + 1];
-        if (isdigit(c)) {
-            String_Length int_len;
-            exponent += string_to_integer(create_sized_string(&string.data[index + 1], (string.length - index - 1)), &int_len);
-            index += int_len + 1;
-        } else if ((c == '+') || (c == '-')) {
-            if ((index + 2 < string.length) && isdigit(string.data[index + 2])) {
-                String_Length int_len;
-                exponent += (c == '-' ? -1 : 1) * string_to_integer(create_sized_string(&string.data[index + 2], (string.length - index - 2)), &int_len);
-                index += int_len + 2;
+        bool negative = false;
+        String_Length temp_index = index + 1;
+        if (string.data[temp_index] == '+') {
+            temp_index++;
+        } else if (string.data[temp_index] == '-') {
+            temp_index++;
+            negative = true;
+        }
+        String_Length int_len;
+        long int value = string_to_int_base(&string.data[temp_index], (string.length - temp_index), 10, &int_len);
+        if (negative) {
+            value = -value;
+        }
+        if (int_len != 0) {
+            index = temp_index + int_len;
+            // Check for possible overflows
+            if (exponent > 0) {
+                exponent = ((LONG_MAX - exponent) < value) ? LONG_MAX : (exponent + value);
+            } else {
+                exponent = (value < (LONG_MIN - exponent)) ? LONG_MIN : (exponent + value);
             }
         }
     }
-    if (length != NULL) {
-        *length = index;
+    if (num_len != NULL) {
+        *num_len = index;
     }
     return scale_radix_exp(number, base, exponent);
+}
+
+// Parses a generic number
+double parse_number(const struct String string, String_Length *const num_len) {
+    // Check if is a integer and parses it
+    if (string.data[0] == '0') {
+        if (string.length >= 3) {
+            String_Length int_len = 0;
+            double number = NAN;
+            const char c = tolower(string.data[1]);
+            switch (c) {
+                case 'x':  // It is a hexadecimal integer because it begins with "0x"
+                    number = (double)string_to_int_base(&string.data[2], (string.length - 2), 16, &int_len);
+                    break;
+                case 'o':  // It is a octal integer because it begins with "0o"
+                    number = (double)string_to_int_base(&string.data[2], (string.length - 2), 8, &int_len);
+                    break;
+                case 'b':  // It is a binary integer because it begins with "0b"
+                    number = (double)string_to_int_base(&string.data[2], (string.length - 2), 2, &int_len);
+                    break;
+            }
+            if (int_len != 0) {
+                if (num_len != NULL) {
+                    *num_len = int_len + 2;
+                }
+                return number;
+            }
+        }
+    }
+    // If wasn't a integer, parses it as a double
+    return string_to_double(string, num_len);
 }
 
 //------------------------------------------------------------------------------

@@ -108,9 +108,9 @@ int lex(struct Lexer *const lexer, struct String line) {
         if (isspace(c)) {
             advance_line(&line, &column, 1);
             continue;
-        } else if (isdigit(c) || c == '.') {
+        } else if (isdigit(c) || (c == '.')) {
             String_Length length = -1;
-            tok.number = string_to_double(line, &length);
+            tok.number = parse_number(line, &length);
             advance_line(&line, &column, length);
             tok.type = TOK_NUMBER;
         } else if (isalpha(c) || c == '_') {
