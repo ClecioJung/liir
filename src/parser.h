@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 
-#include "allocator.h"
+#include "data-structures/allocator.h"
 #include "lex.h"
 #include "variables.h"
 

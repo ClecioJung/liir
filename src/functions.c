@@ -30,8 +30,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "data-structures/sized_string.h"
 #include "variables.h"
-#include "sized_string.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

@@ -33,23 +33,25 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "allocator.h"
+#include "data-structures/allocator.h"
+#include "data-structures/sized_string.h"
 #include "functions.h"
 #include "print_errors.h"
-#include "sized_string.h"
 
 struct Lexer create_lex(const size_t initial_size) {
-    return (struct Lexer){
+    struct Lexer lexer = (struct Lexer){
         .tokens = allocator_construct(sizeof(struct Token), initial_size),
     };
+    if (lexer.tokens.data == NULL) {
+        print_crash_and_exit("Couldn't allocate memory for the lexer!\n");
+    }
+    return lexer;
 }
 
 void destroy_lex(struct Lexer *const lexer) {
-    if (lexer == NULL) {
-        print_crash_and_exit("Invalid call to function \"destroy_lex()\"!\n");
-        return;
+    if (lexer != NULL) {
+        allocator_delete(&lexer->tokens);
     }
-    allocator_delete(&lexer->tokens);
 }
 
 static inline struct Token get_token_at(struct Lexer *const lexer, size_t index) {
@@ -69,6 +71,9 @@ static inline bool add_token(struct Lexer *const lexer, const struct Token tok) 
     }
     // Add the token
     int64_t index = allocator_new(&lexer->tokens);
+    if (index < 0) {
+        print_crash_and_exit("Couldn't allocate more memory for the lexer!\n");
+    }
     struct Token *const token = allocator_get(lexer->tokens, index);
     *token = tok;
     return false;

@@ -31,33 +31,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "data-structures/allocator.h"
+#include "data-structures/sized_string.h"
 #include "functions.h"
 #include "lex.h"
 #include "print_errors.h"
-#include "sized_string.h"
 #include "variables.h"
 
 struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size) {
     if ((lexer == NULL) || (vars == NULL)) {
         print_crash_and_exit("Invalid call to function \"create_parser()\"!\n");
     }
-    return (struct Parser){
+    struct Parser parser = (struct Parser){
         .lexer = lexer,
         .vars = vars,
         .nodes = allocator_construct(sizeof(struct Token_Node), initial_size),
     };
+    if (parser.nodes.data == NULL) {
+        print_crash_and_exit("Couldn't allocate memory for the parser!\n");
+    }
+    return parser;
 }
 
 void destroy_parser(struct Parser *const parser) {
-    if (parser == NULL) {
-        print_crash_and_exit("Invalid call to function \"destroy_parser()\"!\n");
-        return;
+    if (parser != NULL) {
+        allocator_delete(&parser->nodes);
     }
-    allocator_delete(&parser->nodes);
 }
 
 static int64_t new_node(struct Parser *const parser, const struct Token tok) {
     int64_t index = allocator_new(&parser->nodes);
+    if (index < 0) {
+        print_crash_and_exit("Couldn't allocate more memory for the parser!\n");
+    }
     struct Token_Node *const node = allocator_get(parser->nodes, index);
     *node = (struct Token_Node){
         .tok = tok,
@@ -411,7 +417,7 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
     }
 }
 
-void print_node(struct Parser *const parser, const int64_t node_idx, const unsigned int level) {
+static void print_node(struct Parser *const parser, const int64_t node_idx, const unsigned int level) {
     if (is_invalid_idx(parser, node_idx)) {
         return;
     }

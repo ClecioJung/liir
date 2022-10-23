@@ -30,8 +30,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "allocator.h"
-#include "sized_string.h"
+#include "data-structures/allocator.h"
+#include "data-structures/sized_string.h"
 
 enum Tok_Types {
     TOK_OPERATOR,        // +, -, *, /, ^ and =

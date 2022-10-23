@@ -31,29 +31,30 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "data-structures/sized_string.h"
 #include "print_errors.h"
-#include "sized_string.h"
 
 struct Variables create_variables(const size_t initial_list_size, const size_t initial_name_size) {
-    return (struct Variables){
+    struct Variables vars = (struct Variables){
         .list = allocator_construct(sizeof(struct Variable), initial_list_size),
         .names = allocator_construct(sizeof(char), initial_name_size),
     };
+    if ((vars.list.data == NULL) || (vars.names.data == NULL)) {
+        print_crash_and_exit("Couldn't allocate memory for the variables!\n");
+    }
+    return vars;
 }
 
 void destroy_variables(struct Variables *const vars) {
-    if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"destroy_variables()\"!\n");
-        return;
+    if (vars != NULL) {
+        allocator_delete(&vars->list);
+        allocator_delete(&vars->names);
     }
-    allocator_delete(&vars->list);
-    allocator_delete(&vars->names);
 }
 
 void clear_variables(struct Variables *const vars) {
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"clear_variables()\"!\n");
-        return;
     }
     allocator_free_all(&vars->list);
     allocator_free_all(&vars->names);
@@ -145,7 +146,6 @@ double assign_variable(struct Variables *const vars, const struct String name, c
 double get_variable_value(struct Variables *const vars, const int index) {
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"get_variable_value()\"!\n");
-        return NAN;
     }
     if (allocator_is_invalid(vars->list, index)) {
         return NAN;
@@ -167,7 +167,6 @@ static inline unsigned int longest_variable_name(struct Variables *const vars) {
 void print_variables(struct Variables *const vars) {
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"print_variables()\"!\n");
-        return;
     }
     if (vars->list.size == 0) {
         return;

@@ -27,7 +27,7 @@
 #ifndef __INPUT_STREAM
 #define __INPUT_STREAM
 
-#include "string_buffer.h"
+#include "data-structures/string_buffer.h"
 
 struct Input_Stream {
     struct String_Buffer lines;

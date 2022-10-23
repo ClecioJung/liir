@@ -36,8 +36,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "string_buffer.h"
-
 void print_string_to(FILE *const file, const struct String str) {
     fprintf(file, "%.*s", str.length, str.data);
 }

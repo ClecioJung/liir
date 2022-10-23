@@ -31,12 +31,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "data-structures/sized_string.h"
 #include "functions.h"
 #include "input_stream.h"
 #include "lex.h"
 #include "parser.h"
 #include "print_errors.h"
-#include "sized_string.h"
 #include "variables.h"
 
 enum Actions {

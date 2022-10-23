@@ -29,8 +29,8 @@
 
 #include <stdint.h>
 
-#include "allocator.h"
-#include "sized_string.h"
+#include "data-structures/allocator.h"
+#include "data-structures/sized_string.h"
 
 struct Variable {
     int64_t name_idx;

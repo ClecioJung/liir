@@ -35,9 +35,9 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "data-structures/sized_string.h"
+#include "data-structures/string_buffer.h"
 #include "print_errors.h"
-#include "sized_string.h"
-#include "string_buffer.h"
 
 struct Terminal_Config {
     struct termios old_termios;

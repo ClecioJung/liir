@@ -27,7 +27,6 @@ LIBS = -lm
 COMMON_FLAGS = -W -Wall -Wextra -pedantic -Werror -std=c11
 RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -O0 -g -DDEBUG
-DEP_FLAGS = -MT $@ -MMD -MP -MF $(DDIR)/$*.Td
 
 # ----------------------------------------
 # Project macros and functions
@@ -41,7 +40,7 @@ GIT_VERSION = "$(shell git describe --always --dirty --tags)"
 # Based on: https://stackoverflow.com/questions/2483182/recursive-wildcards-in-gnu-make
 rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
-# Name of the compiled file
+# Name of the executable
 RELEASE_EXEC = $(addprefix $(RELEASE_DIR)/, $(PROJECT))
 DEBUG_EXEC = $(addprefix $(DEBUG_DIR)/, $(PROJECT))
 
@@ -49,20 +48,30 @@ DEBUG_EXEC = $(addprefix $(DEBUG_DIR)/, $(PROJECT))
 SRCS = $(call rwildcard,$(SDIR),*.c)
 
 # Dependency files (auto generated)
-DEPS = $(addprefix $(DDIR)/,$(patsubst %,%.d,$(patsubst %,%,$(basename $(notdir $(SRCS))))))
+DEPS = $(patsubst %,%.d,$(basename $(subst $(SDIR),$(DDIR),$(SRCS))))
+RELEASE_DEPS = $(addprefix $(RELEASE_DIR)/, $(DEPS))
+DEBUG_DEPS = $(addprefix $(DEBUG_DIR)/, $(DEPS))
 
 # Object files
-OBJS = $(addprefix $(ODIR)/,$(patsubst %,%.o,$(patsubst %,%,$(basename $(notdir $(SRCS))))))
+OBJS = $(patsubst %,%.o,$(basename $(subst $(SDIR),$(ODIR),$(SRCS))))
 RELEASE_OBJS = $(addprefix $(RELEASE_DIR)/, $(OBJS))
 DEBUG_OBJS = $(addprefix $(DEBUG_DIR)/, $(OBJS))
 
 # Output directories
 RELEASE_ODIR = $(addprefix $(RELEASE_DIR)/, $(ODIR))
 DEBUG_ODIR = $(addprefix $(DEBUG_DIR)/, $(ODIR))
+RELEASE_ODIRS = $(sort $(dir $(RELEASE_OBJS)))
+DEBUG_ODIRS = $(sort $(dir $(DEBUG_OBJS)))
+
+# Dependency directories
+RELEASE_DDIR = $(addprefix $(RELEASE_DIR)/, $(DDIR))
+DEBUG_DDIR = $(addprefix $(DEBUG_DIR)/, $(DDIR))
+RELEASE_DDIRS = $(sort $(dir $(RELEASE_DEPS)))
+DEBUG_DDIRS = $(sort $(dir $(DEBUG_DEPS)))
 
 # Flags for compiler
 REL_CFLAGS = $(COMMON_FLAGS) $(RELEASE_FLAGS)
-DCFLAGS = $(COMMON_FLAGS) $(DEBUG_FLAGS)
+DEB_CFLAGS = $(COMMON_FLAGS) $(DEBUG_FLAGS)
 
 # ----------------------------------------
 # Fomating macros
@@ -87,10 +96,10 @@ $(RELEASE_EXEC): $(RELEASE_OBJS)
 	@ touch $@
 
 $(RELEASE_ODIR)/%.o: $(SDIR)/%.c
-$(RELEASE_ODIR)/%.o: $(SDIR)/%.c $(DDIR)/%.d | $(DDIR) $(RELEASE_ODIR)
+$(RELEASE_ODIR)/%.o: $(SDIR)/%.c $(RELEASE_DDIR)/%.d | $(RELEASE_DDIRS) $(RELEASE_ODIRS)
 	@ echo "${GREEN}Building target ${BOLD}$@${GREEN}, using dependencies ${BOLD}$^${NORMAL}"
-	$(CC) $(REL_CFLAGS) $(DEP_FLAGS) -c $(filter %.c %.s %.o,$^) -o $@
-	@ mv -f $(DDIR)/$*.Td $(DDIR)/$*.d && touch $@
+	$(CC) $(REL_CFLAGS) -MT $@ -MMD -MP -MF $(patsubst %,%.Td,$(basename $(subst $(RELEASE_ODIR),$(RELEASE_DDIR),$@))) -c $(filter %.c %.s %.o,$^) -o $@
+	@ mv -f $(patsubst %,%.Td,$(basename $(subst $(RELEASE_ODIR),$(RELEASE_DDIR),$@))) $(patsubst %,%.d,$(basename $(subst $(RELEASE_ODIR),$(RELEASE_DDIR),$@))) && touch $@
 
 debug: $(DEBUG_EXEC)
 
@@ -100,10 +109,10 @@ $(DEBUG_EXEC): $(DEBUG_OBJS)
 	@ touch $@
 
 $(DEBUG_ODIR)/%.o: $(SDIR)/%.c
-$(DEBUG_ODIR)/%.o: $(SDIR)/%.c $(DDIR)/%.d | $(DDIR) $(DEBUG_ODIR)
+$(DEBUG_ODIR)/%.o: $(SDIR)/%.c $(DEBUG_DDIR)/%.d | $(DEBUG_DDIRS) $(DEBUG_ODIRS)
 	@ echo "${GREEN}Building target ${BOLD}$@${GREEN}, using dependencies ${BOLD}$^${NORMAL}"
-	$(CC) $(DCFLAGS) $(DEP_FLAGS) -c $(filter %.c %.s %.o,$^) -o $@
-	@ mv -f $(DDIR)/$*.Td $(DDIR)/$*.d && touch $@
+	$(CC) $(DEB_CFLAGS) -MT $@ -MMD -MP -MF $(patsubst %,%.Td,$(basename $(subst $(DEBUG_ODIR),$(DEBUG_DDIR),$@))) -c $(filter %.c %.s %.o,$^) -o $@
+	@ mv -f $(patsubst %,%.Td,$(basename $(subst $(DEBUG_ODIR),$(DEBUG_DDIR),$@))) $(patsubst %,%.d,$(basename $(subst $(DEBUG_ODIR),$(DEBUG_DDIR),$@))) && touch $@
 
 # ----------------------------------------
 # Automatic dependency generation rules
@@ -113,16 +122,21 @@ $(DEBUG_ODIR)/%.o: $(SDIR)/%.c $(DDIR)/%.d | $(DDIR) $(DEBUG_ODIR)
 # https://gist.github.com/maxtruxa/4b3929e118914ccef057f8a05c614b0f
 # https://spin.atomicobject.com/2016/08/26/makefile-c-projects/
 
-$(DDIR)/%.d: ;
-.PRECIOUS: $(DDIR)/%.d
+$(RELEASE_DEPS): ;
+.PRECIOUS: $(RELEASE_DEPS)
 
--include $(DEPS)
+-include $(RELEASE_DEPS)
+
+$(DEBUG_DEPS): ;
+.PRECIOUS: $(DEBUG_DEPS)
+
+-include $(DEBUG_DEPS)
 
 # ----------------------------------------
 # Script rules
 # ----------------------------------------
 
-$(RELEASE_ODIR) $(DEBUG_ODIR) $(DDIR):
+$(RELEASE_ODIRS) $(DEBUG_ODIRS) $(RELEASE_DDIRS) $(DEBUG_DDIRS):
 	@ echo "${GREEN}Creating directory ${BOLD}$@${NORMAL}"
 	mkdir -p $@
 
@@ -137,11 +151,15 @@ debugger: debug
 	@ echo "${GREEN}Running the aplication with the debugger${NORMAL}"
 	$(DEBUGGER) ./$(DEBUG_EXEC)
 
+log:
+	@ echo "${GREEN}Git project log:${NORMAL}"
+	git log --oneline --decorate --all --graph
+
 clean:
-	rm -fr $(RELEASE_DIR)/ $(DEBUG_DIR)/ $(DDIR)/ *.d *.o *.a *.so
+	rm -fr $(RELEASE_DIR)/ $(DEBUG_DIR)/ *.d *.o *.a *.so
 
 remade: clean release
 
-.PHONY: all release debug run memcheck debugger clean remade
+.PHONY: all release debug run memcheck debugger log clean remade
 
 # ----------------------------------------

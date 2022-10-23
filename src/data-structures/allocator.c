@@ -30,26 +30,22 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "print_errors.h"
-
 struct Allocator allocator_construct(const size_t base_size, const size_t initial_capacity) {
     struct Allocator allocator = {
         .base_size = base_size,
         .size = 0,
-        .capacity = initial_capacity,
+        .capacity = 0,
         .data = NULL,
     };
     allocator.data = (uint8_t *)malloc(initial_capacity * base_size);
-    if (allocator.data == NULL) {
-        print_crash_and_exit("Could't allocate memory!\n");
+    if (allocator.data != NULL) {
+        allocator.capacity = initial_capacity;
     }
     return allocator;
 }
 
 void allocator_delete(struct Allocator *const allocator) {
-    if (allocator == NULL) {
-        print_crash_and_exit("Invalid call to function \"allocator_delete()\"!\n");
-    } else {
+    if (allocator != NULL) {
         free(allocator->data);
         allocator->size = 0;
         allocator->capacity = 0;
@@ -58,16 +54,11 @@ void allocator_delete(struct Allocator *const allocator) {
 }
 
 void allocator_free_all(struct Allocator *const allocator) {
-    if (allocator == NULL) {
-        print_crash_and_exit("Invalid call to function \"allocator_free_all()\"!\n");
-    } else {
-        allocator->size = 0;
-    }
+    allocator->size = 0;
 }
 
 int64_t allocator_new(struct Allocator *const allocator) {
     if (allocator == NULL) {
-        print_crash_and_exit("Invalid call to function \"allocator_new()\"!\n");
         return -1;
     }
     while ((allocator->size + 1) >= allocator->capacity) {
@@ -76,7 +67,7 @@ int64_t allocator_new(struct Allocator *const allocator) {
         if (new_data != NULL) {
             allocator->data = new_data;
         } else {
-            print_crash_and_exit("Could't allocate more memory!\n");
+            // Could't allocate more memory!
             return -1;
         }
     }
@@ -85,7 +76,6 @@ int64_t allocator_new(struct Allocator *const allocator) {
 
 int64_t allocator_new_array(struct Allocator *const allocator, const size_t size) {
     if (allocator == NULL) {
-        print_crash_and_exit("Invalid call to function \"allocator_new_array()\"!\n");
         return -1;
     }
     while ((allocator->size + size) >= allocator->capacity) {
@@ -94,7 +84,7 @@ int64_t allocator_new_array(struct Allocator *const allocator, const size_t size
         if (new_data != NULL) {
             allocator->data = new_data;
         } else {
-            print_crash_and_exit("Could't allocate more memory!\n");
+            // Could't allocate more memory!
             return -1;
         }
     }

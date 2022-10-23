@@ -29,7 +29,7 @@
 
 #include <stdbool.h>
 
-#include "sized_string.h"
+#include "data-structures/sized_string.h"
 #include "variables.h"
 
 typedef double (*Function_Pointer)(struct Variables *const vars, double arg);
