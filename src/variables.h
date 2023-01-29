@@ -47,10 +47,10 @@ struct Variables {
 struct Variables create_variables(const size_t initial_list_size, const size_t initial_name_size);
 void destroy_variables(struct Variables *const vars);
 void clear_variables(struct Variables *const vars);
-int search_variable(struct Variables *const vars, const struct String name, int *const index);
-void new_variable(struct Variables *const vars, const int index, const struct String name, const double value);
+int search_variable(struct Variables *const vars, const struct String name, int64_t *const index);
+void new_variable(struct Variables *const vars, const int64_t index, const struct String name, const double value);
 double assign_variable(struct Variables *const vars, const struct String name, const double value);
-double get_variable_value(struct Variables *const vars, const int index);
+double get_variable_value(struct Variables *const vars, const int64_t index);
 void print_variables(struct Variables *const vars);
 bool variable_list_is_empty(struct Variables *const vars);
 

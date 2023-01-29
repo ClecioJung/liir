@@ -271,7 +271,7 @@ const int functions_quantity = (sizeof(functions) / sizeof(functions[0]));
 int search_function(const struct String name) {
     // Sequential search in the functions list
     for (int i = 0; i < functions_quantity; i++) {
-        const int function_length = strlen(functions[i].name);
+        const String_Length function_length = (String_Length)strlen(functions[i].name);
         if (name.length == function_length) {
             if (!strncmp(name.data, functions[i].name, name.length)) {
                 return i;
@@ -288,7 +288,7 @@ extern unsigned int max_uint(const unsigned int a, const unsigned int b);
 static inline unsigned int longest_name_functions(void) {
     unsigned int length = 0;
     for (int i = 0; i < functions_quantity; i++) {
-        length = max_uint(length, strlen(functions[i].name));
+        length = max_uint(length, (unsigned int)strlen(functions[i].name));
     }
     return length;
 }

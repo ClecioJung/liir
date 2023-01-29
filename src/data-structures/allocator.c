@@ -71,7 +71,7 @@ int64_t allocator_new(struct Allocator *const allocator) {
             return -1;
         }
     }
-    return allocator->size++;
+    return ((int64_t)(allocator->size++));
 }
 
 int64_t allocator_new_array(struct Allocator *const allocator, const size_t size) {
@@ -88,7 +88,7 @@ int64_t allocator_new_array(struct Allocator *const allocator, const size_t size
             return -1;
         }
     }
-    int64_t ret = allocator->size;
+    int64_t ret = (int64_t)allocator->size;
     allocator->size += size;
     return ret;
 }
@@ -105,7 +105,7 @@ void *allocator_get(const struct Allocator allocator, const int64_t index) {
     if (allocator_is_invalid(allocator, index)) {
         return NULL;
     }
-    return (&allocator.data[0] + allocator.base_size * index);
+    return (&allocator.data[0] + allocator.base_size * (size_t)index);
 }
 
 //------------------------------------------------------------------------------

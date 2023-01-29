@@ -122,7 +122,7 @@ struct String get_string_from_node(struct String_Node *const node) {
 void update_current_string(struct String_Buffer *const string_buffer) {
     const String_Length length = get_current_node(string_buffer)->length;
     // Calculate new index for the current string
-    String_Length new_index = string_buffer->current_index + string_node_header_size + length + 1;
+    String_Node_Index new_index = (String_Node_Index)(string_buffer->current_index + string_node_header_size + length + 1);
     // Check if we must merge to the next string
     if (string_buffer->current_index < string_buffer->last_index) {
         if ((new_index + string_node_header_size + 1) >= string_buffer->last_index) {

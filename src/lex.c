@@ -80,7 +80,7 @@ static inline bool add_token(struct Lexer *const lexer, const struct Token tok) 
 }
 
 static inline struct String parse_name(const struct String string) {
-    int index = 0;
+    String_Length index = 0;
     for (; index < string.length; index++) {
         const char c = string.data[index];
         if (!isalnum(c) && (c != '_')) {
@@ -93,9 +93,12 @@ static inline struct String parse_name(const struct String string) {
     };
 }
 
-static void advance_line(struct String *const line, int *const column, const int value) {
+static void advance_line(struct String *const line, int *const column, String_Length value) {
+    if (value > line->length) {
+        value = line->length;
+    }
     line->data += value;
-    line->length -= value;
+    line->length = line->length - value;
     *column += value;
 }
 
@@ -114,7 +117,7 @@ int lex(struct Lexer *const lexer, struct String line) {
             advance_line(&line, &column, 1);
             continue;
         } else if (isdigit(c) || (c == '.')) {
-            String_Length length = -1;
+            String_Length length;
             tok.number = parse_number(line, &length);
             advance_line(&line, &column, length);
             tok.type = TOK_NUMBER;

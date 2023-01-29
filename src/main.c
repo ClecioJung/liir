@@ -83,7 +83,7 @@ void arguments_usage(void) {
     unsigned int cmd_max_length = 0;
     printf("[Usage] %s [Options]\n", software);
     for (size_t arg_idx = 0; arg_idx < arg_num; arg_idx++) {
-        cmd_max_length = max_uint(cmd_max_length, strlen(arg_list[arg_idx].cmd));
+        cmd_max_length = max_uint(cmd_max_length, (unsigned int)strlen(arg_list[arg_idx].cmd));
     }
     printf("[Options]:\n");
     for (size_t arg_idx = 0; arg_idx < arg_num; arg_idx++) {

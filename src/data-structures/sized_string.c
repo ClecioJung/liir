@@ -47,7 +47,7 @@ void print_string(const struct String str) {
 struct String create_string(char *const cstr) {
     return (struct String){
         .data = cstr,
-        .length = strlen(cstr),
+        .length = (String_Length)strlen(cstr),
     };
 }
 
@@ -194,7 +194,7 @@ double parse_number(const struct String string, String_Length *const num_len) {
         if (string.length >= 3) {
             String_Length int_len = 0;
             double number = NAN;
-            const char c = tolower(string.data[1]);
+            const char c = (char)tolower(string.data[1]);
             switch (c) {
                 case 'x':  // It is a hexadecimal integer because it begins with "0x"
                     number = (double)string_to_int_base(&string.data[2], (string.length - 2), 16, &int_len);

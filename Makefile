@@ -24,7 +24,7 @@ DEBUGGER = gdb
 LIBS = -lm
 
 # Flags for compiler
-COMMON_FLAGS = -W -Wall -Wextra -pedantic -Werror -std=c11
+COMMON_FLAGS = -W -Wall -Wextra -pedantic -Wconversion -Werror -std=c11
 RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -O0 -g -DDEBUG
 
@@ -95,8 +95,8 @@ $(RELEASE_EXEC): $(RELEASE_OBJS)
 	$(CC) $(filter %.s %.o,$^) -o $@ $(LIBS)
 	@ touch $@
 
-$(RELEASE_ODIR)/%.o: $(SDIR)/%.c
-$(RELEASE_ODIR)/%.o: $(SDIR)/%.c $(RELEASE_DDIR)/%.d | $(RELEASE_DDIRS) $(RELEASE_ODIRS)
+$(RELEASE_ODIR)/%.o: $(SDIR)/%.c Makefile
+$(RELEASE_ODIR)/%.o: $(SDIR)/%.c $(RELEASE_DDIR)/%.d Makefile | $(RELEASE_DDIRS) $(RELEASE_ODIRS)
 	@ echo "${GREEN}Building target ${BOLD}$@${GREEN}, using dependencies ${BOLD}$^${NORMAL}"
 	$(CC) $(REL_CFLAGS) -MT $@ -MMD -MP -MF $(patsubst %,%.Td,$(basename $(subst $(RELEASE_ODIR),$(RELEASE_DDIR),$@))) -c $(filter %.c %.s %.o,$^) -o $@
 	@ mv -f $(patsubst %,%.Td,$(basename $(subst $(RELEASE_ODIR),$(RELEASE_DDIR),$@))) $(patsubst %,%.d,$(basename $(subst $(RELEASE_ODIR),$(RELEASE_DDIR),$@))) && touch $@
@@ -108,8 +108,8 @@ $(DEBUG_EXEC): $(DEBUG_OBJS)
 	$(CC) $(filter %.s %.o,$^) -o $@ $(LIBS)
 	@ touch $@
 
-$(DEBUG_ODIR)/%.o: $(SDIR)/%.c
-$(DEBUG_ODIR)/%.o: $(SDIR)/%.c $(DEBUG_DDIR)/%.d | $(DEBUG_DDIRS) $(DEBUG_ODIRS)
+$(DEBUG_ODIR)/%.o: $(SDIR)/%.c Makefile
+$(DEBUG_ODIR)/%.o: $(SDIR)/%.c $(DEBUG_DDIR)/%.d Makefile | $(DEBUG_DDIRS) $(DEBUG_ODIRS)
 	@ echo "${GREEN}Building target ${BOLD}$@${GREEN}, using dependencies ${BOLD}$^${NORMAL}"
 	$(CC) $(DEB_CFLAGS) -MT $@ -MMD -MP -MF $(patsubst %,%.Td,$(basename $(subst $(DEBUG_ODIR),$(DEBUG_DDIR),$@))) -c $(filter %.c %.s %.o,$^) -o $@
 	@ mv -f $(patsubst %,%.Td,$(basename $(subst $(DEBUG_ODIR),$(DEBUG_DDIR),$@))) $(patsubst %,%.d,$(basename $(subst $(DEBUG_ODIR),$(DEBUG_DDIR),$@))) && touch $@

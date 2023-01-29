@@ -60,22 +60,25 @@ void clear_variables(struct Variables *const vars) {
     allocator_free_all(&vars->names);
 }
 
-static inline struct Variable *variable(struct Variables *const vars, const int index) {
+static inline struct Variable *variable(struct Variables *const vars, const int64_t index) {
     return allocator_get(vars->list, index);
 }
 
-static inline char *variable_name(struct Variables *const vars, const int index) {
+static inline char *variable_name(struct Variables *const vars, const int64_t index) {
     struct Variable *var = variable(vars, index);
     return allocator_get(vars->names, var->name_idx);
 }
 
-static inline double variable_value(struct Variables *const vars, const int index) {
+static inline double variable_value(struct Variables *const vars, const int64_t index) {
     struct Variable *var = variable(vars, index);
     return var->value;
 }
 
 // This function returns zero if found the variable in the list
-int search_variable(struct Variables *const vars, const struct String name, int *const index) {
+// It was implemented this way in order to do a optimization in the function assign_variable
+// In this function, if the variable was not found, we already know the correct index to insert it,
+// preserving the order
+int search_variable(struct Variables *const vars, const struct String name, int64_t *const index) {
     if ((vars == NULL) || (index == NULL)) {
         print_crash_and_exit("Invalid call to function \"search_variable()\"!\n");
         return -1;
@@ -85,9 +88,9 @@ int search_variable(struct Variables *const vars, const struct String name, int 
         return -1;
     }
     // Binary search in variables list
-    *index = vars->list.size;  // middle
-    int low = 0;
-    int high = vars->list.size - 1;
+    *index = (int64_t)vars->list.size;  // middle
+    int64_t low = 0;
+    int64_t high = (int64_t)vars->list.size - 1;
     int comp = -1;
     while (low <= high) {
         *index = (low + high) / 2;
@@ -103,13 +106,13 @@ int search_variable(struct Variables *const vars, const struct String name, int 
     return comp;
 }
 
-void new_variable(struct Variables *const vars, const int index, const struct String name, const double value) {
+void new_variable(struct Variables *const vars, const int64_t index, const struct String name, const double value) {
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"new_variable()\"!\n");
         return;
     }
     // Moves variables down in the list to make space for the new variable
-    for (int i = allocator_new(&vars->list); i > index; i--) {
+    for (int64_t i = allocator_new(&vars->list); i > index; i--) {
         struct Variable *current = variable(vars, i);
         struct Variable *previous = variable(vars, i - 1);
         current->name_idx = previous->name_idx;
@@ -128,7 +131,7 @@ double assign_variable(struct Variables *const vars, const struct String name, c
         print_crash_and_exit("Invalid call to function \"assign_variable()\"!\n");
         return NAN;
     }
-    int index;
+    int64_t index;
     const int search = search_variable(vars, name, &index);
     if (search != 0) {
         // Insert new variable in alphabetical order
@@ -143,7 +146,7 @@ double assign_variable(struct Variables *const vars, const struct String name, c
     return value;
 }
 
-double get_variable_value(struct Variables *const vars, const int index) {
+double get_variable_value(struct Variables *const vars, const int64_t index) {
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"get_variable_value()\"!\n");
     }
@@ -159,7 +162,7 @@ extern unsigned int max_uint(const unsigned int a, const unsigned int b);
 static inline unsigned int longest_variable_name(struct Variables *const vars) {
     unsigned int length = 0;
     for (size_t i = 0; i < vars->list.size; i++) {
-        length = max_uint(length, strlen(variable_name(vars, i)));
+        length = max_uint(length, (unsigned int)strlen(variable_name(vars, (int64_t)i)));
     }
     return length;
 }
@@ -176,7 +179,7 @@ void print_variables(struct Variables *const vars) {
     printf("List of variables:\n");
     printf("%-*s Value\n", max_length, header);
     for (size_t i = 0; i < vars->list.size; i++) {
-        printf("%-*s %lg\n", max_length, variable_name(vars, i), variable_value(vars, i));
+        printf("%-*s %lg\n", max_length, variable_name(vars, (int64_t)i), variable_value(vars, (int64_t)i));
     }
     printf("\n");
 }

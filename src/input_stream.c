@@ -62,8 +62,8 @@ static void configure_terminal(void) {
         }
         terminal_config.is_configured = true;
         struct termios new_terminal = terminal_config.old_termios;
-        new_terminal.c_lflag &= ~ICANON;  // Disable canonical mode
-        new_terminal.c_lflag &= ~ECHO;    // Disable echo
+        new_terminal.c_lflag &= (tcflag_t) ~ICANON;  // Disable canonical mode
+        new_terminal.c_lflag &= (tcflag_t) ~ECHO;    // Disable echo
         if (tcsetattr(STDIN_FILENO, TCSANOW, &new_terminal) != EXIT_SUCCESS) {
             print_crash_and_exit("When configuring the terminal for the \"Input_Stream\", the function \"tcsetattr()\" failed with error: %s\n", strerror(errno));
         }
@@ -96,7 +96,7 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
     String_Node_Index auxiliar_index = INVALID_STRING_INDEX;
     String_Node_Index line_index = input_stream->lines.current_index;
     for (;;) {
-        char c = getchar();
+        const char c = (char)getchar();
         // If is an ANSI escape code
         if (c == '\033') {
             getchar();  // Skip the [
