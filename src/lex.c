@@ -177,6 +177,24 @@ int lex(struct Lexer *const lexer, struct String line) {
     return EXIT_SUCCESS;
 }
 
+char *get_token_type(const enum Tok_Types type) {
+    switch (type) {
+        case TOK_OPERATOR:
+            return "operator";
+        case TOK_UNARY_OPERATOR:
+            return "unary operator";
+        case TOK_DELIMITER:
+            return "delimiter";
+        case TOK_NUMBER:
+            return "number";
+        case TOK_NAME:
+            return "name";
+        case TOK_FUNCTION:
+            return "function";
+    }
+    return NULL;
+}
+
 void print_token(const struct Token tok) {
     switch (tok.type) {
         case TOK_OPERATOR:

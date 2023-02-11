@@ -118,6 +118,7 @@ static int get_op_precedence(const char op) {
     return num_ops;
 }
 
+// This function returns true if found an error
 static inline bool check_parser_right_error(struct Parser *const parser, const int64_t previous_idx, const int64_t current_idx) {
     struct Token previous_tok = get_tok(parser, previous_idx);
     struct Token current_tok = get_tok(parser, current_idx);
@@ -156,6 +157,7 @@ static inline bool check_parser_right_error(struct Parser *const parser, const i
     return false;
 }
 
+// This function returns true if found an error
 static bool insert_node_right(struct Parser *const parser, int64_t *const head_idx, const int64_t node_idx) {
     if (*head_idx < 0) {
         *head_idx = node_idx;
@@ -172,6 +174,7 @@ static bool insert_node_right(struct Parser *const parser, int64_t *const head_i
     return false;
 }
 
+// This function returns true if found an error
 static inline bool insert_new_op(struct Parser *const parser, int64_t *const head_idx, const int64_t node_idx, const int64_t max_idx) {
     if (*head_idx < 0) {
         *head_idx = node_idx;
@@ -200,9 +203,10 @@ static inline bool insert_new_op(struct Parser *const parser, int64_t *const hea
     return false;
 }
 
-static int64_t parse_parentheses(struct Parser *const parser, size_t *const tk_idx) {
-    int64_t head_idx = -1;
+// This function returns true if found an error
+static bool parse_parentheses(struct Parser *const parser, size_t *const tk_idx, int64_t *const head_idx) {
     int64_t last_parentheses_idx = -1;
+    *head_idx = -1;
     while ((*tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, (int64_t)*tk_idx)->op != ')')) {
         const struct Token current_token = *get_lex_tok(parser, (int64_t)*tk_idx);
         if (parser->lexer->tokens.size >= 1) {
@@ -210,39 +214,41 @@ static int64_t parse_parentheses(struct Parser *const parser, size_t *const tk_i
             if (previous_token.type == TOK_FUNCTION) {
                 print_column(current_token.column);
                 print_error("All functions must be followed by parentheses!\n");
-                return -1;
+                return true;
             }
         }
         if ((current_token.type == TOK_DELIMITER) && (current_token.op == '(')) {
             (*tk_idx)++;
             if (*tk_idx < parser->lexer->tokens.size) {
-                last_parentheses_idx = parse_parentheses(parser, tk_idx);
-                // If the returned value is negative, there is no new node to insert
+                if (parse_parentheses(parser, tk_idx, &last_parentheses_idx)) {
+                    return true;
+                }
+                // If last_parentheses_idx is negative, there is no new node to insert
                 if (last_parentheses_idx >= 0) {
-                    if (insert_node_right(parser, &head_idx, last_parentheses_idx)) {
-                        return -1;
+                    if (insert_node_right(parser, head_idx, last_parentheses_idx)) {
+                        return true;
                     }
                 }
             }
             if (*tk_idx >= parser->lexer->tokens.size) {
                 print_column(current_token.column);
                 print_error("Mismatched delimiters! Not all parentheses were closed!\n");
-                return -1;
+                return true;
             }
         } else if (current_token.type == TOK_OPERATOR) {
             int64_t node_idx = new_node(parser, current_token);
-            if (insert_new_op(parser, &head_idx, node_idx, last_parentheses_idx)) {
-                return -1;
+            if (insert_new_op(parser, head_idx, node_idx, last_parentheses_idx)) {
+                return true;
             }
         } else {
             int64_t node_idx = new_node(parser, current_token);
-            if (insert_node_right(parser, &head_idx, node_idx)) {
-                return -1;
+            if (insert_node_right(parser, head_idx, node_idx)) {
+                return true;
             }
         }
         (*tk_idx)++;
     }
-    return head_idx;
+    return false;
 }
 
 int64_t parse(struct Parser *const parser) {
@@ -254,20 +260,21 @@ int64_t parse(struct Parser *const parser) {
     }
     allocator_free_all(&parser->nodes);
     size_t tk_idx = 0;
-    int64_t head_idx = parse_parentheses(parser, &tk_idx);
-    if (head_idx >= 0) {
-        if ((tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, (int64_t)tk_idx)->op == ')')) {
-            print_column(get_lex_tok(parser, (int64_t)tk_idx)->column);
-            print_error("Mismatched delimiters! Unexpected closing parentheses!\n");
+    int64_t head_idx = -1;
+    if (parse_parentheses(parser, &tk_idx, &head_idx) || (head_idx < 0)) {
+        return -1;
+    }
+    if ((tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, (int64_t)tk_idx)->op == ')')) {
+        print_column(get_lex_tok(parser, (int64_t)tk_idx)->column);
+        print_error("Mismatched delimiters! Unexpected closing parentheses!\n");
+        return -1;
+    }
+    if ((tk_idx == parser->lexer->tokens.size) && (parser->lexer->tokens.size >= 1)) {
+        const struct Token last_token = *get_lex_tok(parser, ((int64_t)parser->lexer->tokens.size - 1));
+        if (last_token.type == TOK_FUNCTION) {
+            print_column(last_token.column);
+            print_error("All functions must be folowed by parentheses!\n");
             return -1;
-        }
-        if ((tk_idx == parser->lexer->tokens.size) && (parser->lexer->tokens.size >= 1)) {
-            const struct Token last_token = *get_lex_tok(parser, ((int64_t)parser->lexer->tokens.size - 1));
-            if (last_token.type == TOK_FUNCTION) {
-                print_column(last_token.column);
-                print_error("All functions must be folowed by parentheses!\n");
-                return -1;
-            }
         }
     }
     return head_idx;
@@ -299,8 +306,6 @@ static inline double perform_function_call(struct Parser *const parser, const in
     }
     // If the function argument is a name (possible a variable), pass it to the function to be used as a reference
     if (is_valid_idx(parser, right_idx) && (get_tok(parser, right_idx).type == TOK_NAME)) {
-        // struct Token right_tok = get_tok(parser, right_idx);
-        // arg.name = &right_tok.name;
         arg.name = get_tok(parser, right_idx).name;
     }
     return function.fn(parser->vars, arg);
@@ -400,11 +405,32 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
                     *status = Eval_Error;
                     return NAN;
             }
-        case TOK_NUMBER:
+        case TOK_NUMBER: {
+            const int64_t right_idx = get_right_idx(parser, node_idx);
+            if (is_valid_idx(parser, right_idx)) {
+                print_column(get_tok(parser, right_idx).column);
+                print_warning("Invalid %s at evaluation phase\n", get_token_type(get_tok(parser, right_idx).type));
+            }
+            const int64_t left_idx = get_left_idx(parser, node_idx);
+            if (is_valid_idx(parser, left_idx)) {
+                print_column(get_tok(parser, left_idx).column);
+                print_warning("Invalid %s at evaluation phase\n", get_token_type(get_tok(parser, left_idx).type));
+            }
             return get_tok(parser, node_idx).number;
+        }
         case TOK_FUNCTION: 
             return perform_function_call(parser, node_idx, status);
         case TOK_NAME: {
+            const int64_t right_idx = get_right_idx(parser, node_idx);
+            if (is_valid_idx(parser, right_idx)) {
+                print_column(get_tok(parser, right_idx).column);
+                print_warning("Invalid %s at evaluation phase\n", get_token_type(get_tok(parser, right_idx).type));
+            }
+            const int64_t left_idx = get_left_idx(parser, node_idx);
+            if (is_valid_idx(parser, left_idx)) {
+                print_column(get_tok(parser, left_idx).column);
+                print_warning("Invalid %s at evaluation phase\n", get_token_type(get_tok(parser, left_idx).type));
+            }
             int64_t index;
             const struct String name = get_tok(parser, node_idx).name;
             if (search_variable(parser->vars, name, &index) != 0) {
