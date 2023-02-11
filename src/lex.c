@@ -104,8 +104,7 @@ static void advance_line(struct String *const line, int *const column, String_Le
 
 int lex(struct Lexer *const lexer, struct String line) {
     if (lexer == NULL) {
-        print_crash_and_exit("Invalid call to function \"lex()\"!\n");
-        return EXIT_FAILURE;
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     allocator_free_all(&lexer->tokens);
     for (int column = 0; line.length > 0;) {
@@ -128,7 +127,7 @@ int lex(struct Lexer *const lexer, struct String line) {
                 tok.type = TOK_FUNCTION;
                 tok.function_index = function_index;
             } else {
-                tok.type = TOK_VARIABLE;
+                tok.type = TOK_NAME;
                 tok.name = name;
             }
             advance_line(&line, &column, name.length);
@@ -195,7 +194,7 @@ void print_token(const struct Token tok) {
             printf("NUMBER    ");
             printf("%g\n", tok.number);
             break;
-        case TOK_VARIABLE:
+        case TOK_NAME:
             printf("VARIABLE  ");
             print_string(tok.name);
             printf("\n");
@@ -209,8 +208,7 @@ void print_token(const struct Token tok) {
 
 void print_tokens(struct Lexer *const lexer) {
     if (lexer == NULL) {
-        print_crash_and_exit("Invalid call to function \"print_tokens()\"!\n");
-        return;
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     if (lexer->tokens.size == 0) {
         return;

@@ -54,7 +54,7 @@ void destroy_variables(struct Variables *const vars) {
 
 void clear_variables(struct Variables *const vars) {
     if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"clear_variables()\"!\n");
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     allocator_free_all(&vars->list);
     allocator_free_all(&vars->names);
@@ -80,7 +80,7 @@ static inline double variable_value(struct Variables *const vars, const int64_t 
 // preserving the order
 int search_variable(struct Variables *const vars, const struct String name, int64_t *const index) {
     if ((vars == NULL) || (index == NULL)) {
-        print_crash_and_exit("Invalid call to function \"search_variable()\"!\n");
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
         return -1;
     }
     if (vars->list.size == 0) {
@@ -108,8 +108,7 @@ int search_variable(struct Variables *const vars, const struct String name, int6
 
 void new_variable(struct Variables *const vars, const int64_t index, const struct String name, const double value) {
     if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"new_variable()\"!\n");
-        return;
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     // Moves variables down in the list to make space for the new variable
     for (int64_t i = allocator_new(&vars->list); i > index; i--) {
@@ -128,8 +127,7 @@ void new_variable(struct Variables *const vars, const int64_t index, const struc
 
 double assign_variable(struct Variables *const vars, const struct String name, const double value) {
     if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"assign_variable()\"!\n");
-        return NAN;
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     int64_t index;
     const int search = search_variable(vars, name, &index);
@@ -148,7 +146,7 @@ double assign_variable(struct Variables *const vars, const struct String name, c
 
 double get_variable_value(struct Variables *const vars, const int64_t index) {
     if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"get_variable_value()\"!\n");
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     if (allocator_is_invalid(vars->list, index)) {
         return NAN;
@@ -169,7 +167,7 @@ static inline unsigned int longest_variable_name(struct Variables *const vars) {
 
 void print_variables(struct Variables *const vars) {
     if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"print_variables()\"!\n");
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     if (vars->list.size == 0) {
         return;

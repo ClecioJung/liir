@@ -58,18 +58,18 @@ static void configure_terminal(void) {
             print_crash_and_exit("The standard input must be a terminal!\n");
         }
         if (tcgetattr(STDIN_FILENO, &terminal_config.old_termios) != EXIT_SUCCESS) {
-            print_crash_and_exit("When configuring the terminal for the \"Input_Stream\", the function \"tcgetattr()\" failed with error: %s\n", strerror(errno));
+            print_crash_and_exit("When configuring the terminal, the function \"tcgetattr()\" failed with error: %s\n", strerror(errno));
         }
         terminal_config.is_configured = true;
         struct termios new_terminal = terminal_config.old_termios;
         new_terminal.c_lflag &= (tcflag_t) ~ICANON;  // Disable canonical mode
         new_terminal.c_lflag &= (tcflag_t) ~ECHO;    // Disable echo
         if (tcsetattr(STDIN_FILENO, TCSANOW, &new_terminal) != EXIT_SUCCESS) {
-            print_crash_and_exit("When configuring the terminal for the \"Input_Stream\", the function \"tcsetattr()\" failed with error: %s\n", strerror(errno));
+            print_crash_and_exit("When configuring the terminal, the function \"tcsetattr()\" failed with error: %s\n", strerror(errno));
         }
         // Even if the application crashes, the terminal must be restored
         if (atexit(restore_terminal) != EXIT_SUCCESS) {
-            print_crash_and_exit("When configuring the terminal for the \"Input_Stream\", the function \"atexit()\" failed!\n");
+            print_crash_and_exit("When configuring the terminal, the function \"atexit()\" failed!\n");
         }
     }
 }
@@ -83,7 +83,7 @@ struct Input_Stream create_input_stream(void) {
 
 struct String get_line_from_input(struct Input_Stream *const input_stream) {
     if (input_stream == NULL) {
-        print_crash_and_exit("Invalid call to function \"get_line_from_input()\"!\n");
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     const struct String command = create_string("> ");
     print_string(command);
@@ -272,7 +272,7 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
 
 void print_previous_lines(struct Input_Stream *const input_stream) {
     if (input_stream == NULL) {
-        print_crash_and_exit("Invalid call to function \"print_previous_lines()\"!\n");
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     printf("Previous typed lines:\n");
     print_string_buffer(&input_stream->lines);
