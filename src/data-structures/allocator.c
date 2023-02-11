@@ -57,6 +57,10 @@ void allocator_free_all(struct Allocator *const allocator) {
     allocator->size = 0;
 }
 
+void allocator_free_last(struct Allocator *const allocator) {
+    allocator->size--;
+}
+
 int64_t allocator_new(struct Allocator *const allocator) {
     if (allocator == NULL) {
         return -1;

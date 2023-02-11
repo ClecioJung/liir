@@ -32,7 +32,14 @@
 #include "data-structures/sized_string.h"
 #include "variables.h"
 
-typedef double (*Function_Pointer)(struct Variables *const vars, double arg);
+// Struct used to store the argument of a function. It may contain a value,
+// a name (possible referente to a variable), or both
+struct Fn_Arg {
+    double value;
+    struct String name;
+};
+
+typedef double (*Function_Pointer)(struct Variables *const vars, struct Fn_Arg arg);
 
 struct Function {
     char *name;

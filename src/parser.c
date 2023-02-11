@@ -129,7 +129,7 @@ static inline bool check_parser_right_error(struct Parser *const parser, const i
         }
         if (current_tok.type == TOK_NAME) {
             print_column(current_tok.column);
-            print_error("Unexpected variable! Check for missing operator, missing or unbalanced delimiters, or other syntax error.\n");
+            print_error("Unexpected name! Check for missing operator, missing or unbalanced delimiters, or other syntax error.\n");
             return true;
         }
         if (current_tok.type == TOK_FUNCTION) {
@@ -145,18 +145,11 @@ static inline bool check_parser_right_error(struct Parser *const parser, const i
                 print_warning("The function \"%s\" accepts no argument!\n", functions[previous_tok.function_index].name);
             }
         }
-        if (current_tok.type == TOK_OPERATOR) {
-            if (!functions[previous_tok.function_index].return_value) {
-                print_column(previous_tok.column);
-                print_error("The function \"%s\" returns no value, so it can't be used in a expression!\n", functions[previous_tok.function_index].name);
-                return true;
-            }
-        }
     }
     if (previous_tok.type == TOK_OPERATOR) {
         if ((current_tok.type == TOK_FUNCTION) && (!functions[current_tok.function_index].return_value)) {
             print_column(current_tok.column);
-            print_error("The function \"%s\" returns no value, so it can't be used in a expression!\n", functions[current_tok.function_index].name);
+            print_error("The function \"%s\" doesn't return a value, so it can't be used in a expression!\n", functions[current_tok.function_index].name);
             return true;
         }
     }
@@ -262,20 +255,55 @@ int64_t parse(struct Parser *const parser) {
     allocator_free_all(&parser->nodes);
     size_t tk_idx = 0;
     int64_t head_idx = parse_parentheses(parser, &tk_idx);
-    if ((tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, (int64_t)tk_idx)->op == ')')) {
-        print_column(get_lex_tok(parser, (int64_t)tk_idx)->column);
-        print_error("Mismatched delimiters! Unexpected closing parentheses!\n");
-        return -1;
-    }
-    if ((head_idx >= 0) && (tk_idx == parser->lexer->tokens.size) && (parser->lexer->tokens.size >= 1)) {
-        const struct Token last_token = *get_lex_tok(parser, ((int64_t)parser->lexer->tokens.size - 1));
-        if (last_token.type == TOK_FUNCTION) {
-            print_column(last_token.column);
-            print_error("All functions must be folowed by parentheses!\n");
+    if (head_idx >= 0) {
+        if ((tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, (int64_t)tk_idx)->op == ')')) {
+            print_column(get_lex_tok(parser, (int64_t)tk_idx)->column);
+            print_error("Mismatched delimiters! Unexpected closing parentheses!\n");
             return -1;
+        }
+        if ((tk_idx == parser->lexer->tokens.size) && (parser->lexer->tokens.size >= 1)) {
+            const struct Token last_token = *get_lex_tok(parser, ((int64_t)parser->lexer->tokens.size - 1));
+            if (last_token.type == TOK_FUNCTION) {
+                print_column(last_token.column);
+                print_error("All functions must be folowed by parentheses!\n");
+                return -1;
+            }
         }
     }
     return head_idx;
+}
+
+static inline double perform_function_call(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status) {
+    const struct Function function = functions[get_tok(parser, node_idx).function_index];
+    if (function.fn == NULL) {
+        print_column(get_tok(parser, node_idx).column);
+        print_error("The function \"%s\" was not properly initialized!\n", function.name);
+        *status = Eval_Error;
+        return NAN;
+    }
+    const int64_t right_idx = get_right_idx(parser, node_idx);
+    if ((function.arity >= 1) && is_invalid_idx(parser, right_idx)) {
+        print_column(get_tok(parser, node_idx).column);
+        print_warning("Did you forget to pass a argument to the function \"%s\"?\n", function.name);
+    }
+    if ((!function.return_value) && (*status != Eval_Error)) {
+        *status = Eval_Dont_Print;
+    }
+    struct Fn_Arg arg = (struct Fn_Arg){
+        .value = evaluate(parser, right_idx, status),
+        .name = {0},
+    };
+    // If got error at evaluation, don't call the function
+    if (*status == Eval_Error) {
+        return NAN;
+    }
+    // If the function argument is a name (possible a variable), pass it to the function to be used as a reference
+    if (is_valid_idx(parser, right_idx) && (get_tok(parser, right_idx).type == TOK_NAME)) {
+        // struct Token right_tok = get_tok(parser, right_idx);
+        // arg.name = &right_tok.name;
+        arg.name = get_tok(parser, right_idx).name;
+    }
+    return function.fn(parser->vars, arg);
 }
 
 double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status) {
@@ -374,23 +402,8 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
             }
         case TOK_NUMBER:
             return get_tok(parser, node_idx).number;
-        case TOK_FUNCTION: {
-            const struct Function function = functions[get_tok(parser, node_idx).function_index];
-            if (function.fn == NULL) {
-                print_column(get_tok(parser, node_idx).column);
-                print_error("The function \"%s\" was not properly initialized!\n", function.name);
-                *status = Eval_Error;
-                return NAN;
-            }
-            if ((function.arity >= 1) && is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                print_column(get_tok(parser, node_idx).column);
-                print_warning("Did you forget to pass a argument to the function \"%s\"?\n", function.name);
-            }
-            if ((!function.return_value) && (*status != Eval_Error)) {
-                *status = Eval_Dont_Print;
-            }
-            return function.fn(parser->vars, evaluate(parser, get_right_idx(parser, node_idx), status));
-        }
+        case TOK_FUNCTION: 
+            return perform_function_call(parser, node_idx, status);
         case TOK_NAME: {
             int64_t index;
             const struct String name = get_tok(parser, node_idx).name;

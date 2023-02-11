@@ -139,7 +139,7 @@ int parse_arguments(const int argc, const char *const argv[]) {
     return EXIT_SUCCESS;
 }
 
-double fn_exit(struct Variables *const vars, const double arg) {
+double fn_exit(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
     (void)arg;
     actions |= ACTION_EXIT;
@@ -159,7 +159,7 @@ int main(const int argc, const char *const argv[]) {
     }
     struct Input_Stream input_stream = create_input_stream();
     struct Lexer lexer = create_lex(64);
-    struct Variables vars = create_variables(64, 1024);
+    struct Variables vars = create_variables(64);
     struct Parser parser = create_parser(&lexer, &vars, 1024);
     while ((actions & ACTION_EXIT) == 0) {
         struct String line = get_line_from_input(&input_stream);

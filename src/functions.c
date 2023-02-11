@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "data-structures/sized_string.h"
+#include "print_errors.h"
 #include "variables.h"
 
 #ifndef M_PI
@@ -41,15 +42,26 @@
 #endif
 
 // Defined on main.c
-extern double fn_exit(struct Variables *const vars, const double arg);
+extern double fn_exit(struct Variables *const vars, const struct Fn_Arg arg);
 
-double fn_clear(struct Variables *const vars, const double arg) {
+double fn_clear(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)arg;
     clear_variables(vars);
     return NAN;
 }
 
-double fn_variables(struct Variables *const vars, const double arg) {
+double fn_delete(struct Variables *const vars, const struct Fn_Arg arg) {
+    if ((arg.name.data == NULL) || (arg.name.length == 0)) {
+        print_error("The function \"delete\" expects a reference to a variable as argument\n");
+        return NAN;
+    }
+    if (delete_variable(vars, arg.name) == EXIT_FAILURE) {
+        print_error("The variable %.*s does not exist!\n", arg.name.length, arg.name.data);
+    }
+    return NAN;
+}
+
+double fn_variables(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)arg;
     if (variable_list_is_empty(vars)) {
         printf("The variables list is empty!\n");
@@ -59,82 +71,82 @@ double fn_variables(struct Variables *const vars, const double arg) {
     return NAN;
 }
 
-double fn_functions(struct Variables *const vars, const double arg) {
+double fn_functions(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
     (void)arg;
     print_functions();
     return NAN;
 }
 
-double fn_euler(struct Variables *const vars, const double arg) {
+double fn_euler(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
     (void)arg;
     return M_E;
 }
 
-double fn_pi(struct Variables *const vars, const double arg) {
+double fn_pi(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
     (void)arg;
     return M_PI;
 }
-double fn_sqrt(struct Variables *const vars, const double arg) {
+double fn_sqrt(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return sqrt(arg);
+    return sqrt(arg.value);
 }
 
-double fn_cbrt(struct Variables *const vars, const double arg) {
+double fn_cbrt(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return cbrt(arg);
+    return cbrt(arg.value);
 }
 
-double fn_exp(struct Variables *const vars, const double arg) {
+double fn_exp(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return exp(arg);
+    return exp(arg.value);
 }
 
-double fn_log(struct Variables *const vars, const double arg) {
+double fn_log(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return log(arg);
+    return log(arg.value);
 }
 
-double fn_log10(struct Variables *const vars, const double arg) {
+double fn_log10(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return log10(arg);
+    return log10(arg.value);
 }
 
-double fn_log2(struct Variables *const vars, const double arg) {
+double fn_log2(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return log2(arg);
+    return log2(arg.value);
 }
 
-double fn_sin(struct Variables *const vars, const double arg) {
+double fn_sin(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return sin(arg);
+    return sin(arg.value);
 }
 
-double fn_cos(struct Variables *const vars, const double arg) {
+double fn_cos(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return cos(arg);
+    return cos(arg.value);
 }
 
-double fn_tan(struct Variables *const vars, const double arg) {
+double fn_tan(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return tan(arg);
+    return tan(arg.value);
 }
 
-double fn_asin(struct Variables *const vars, const double arg) {
+double fn_asin(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return asin(arg);
+    return asin(arg.value);
 }
 
-double fn_acos(struct Variables *const vars, const double arg) {
+double fn_acos(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return acos(arg);
+    return acos(arg.value);
 }
 
-double fn_atan(struct Variables *const vars, const double arg) {
+double fn_atan(struct Variables *const vars, const struct Fn_Arg arg) {
     (void)vars;
-    return atan(arg);
+    return atan(arg.value);
 }
 
 const struct Function functions[] = {
@@ -151,6 +163,13 @@ const struct Function functions[] = {
         .arity = 0,
         .return_value = false,
         .fn = &fn_clear,
+    },
+    {
+        .name = "delete",
+        .description = "deletes a variable from memory",
+        .arity = 1,
+        .return_value = false,
+        .fn = &fn_delete,
     },
     {
         .name = "variables",

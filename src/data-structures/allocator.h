@@ -45,6 +45,7 @@ struct Allocator {
 struct Allocator allocator_construct(const size_t base_size, const size_t initial_capacity);
 void allocator_delete(struct Allocator *const allocator);
 void allocator_free_all(struct Allocator *const allocator);
+void allocator_free_last(struct Allocator *const allocator);
 int64_t allocator_new(struct Allocator *const allocator);
 int64_t allocator_new_array(struct Allocator *const allocator, const size_t size);
 bool allocator_is_valid(const struct Allocator allocator, const int64_t ptrdiff);

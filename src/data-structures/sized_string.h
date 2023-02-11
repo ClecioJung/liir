@@ -48,6 +48,7 @@ void print_string(const struct String str);
 struct String create_string(char *const cstr);
 struct String create_sized_string(char *const str, const String_Length length);
 bool string_is_empty(const struct String *const str);
+int string_compare(const struct String str1, const struct String str2);
 
 // Functions used to convert strings to numbers (without checking for signal)
 // The number of characters parsed into the returned number is stored in num_len

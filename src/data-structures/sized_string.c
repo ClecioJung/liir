@@ -67,6 +67,15 @@ bool string_is_empty(const struct String *const str) {
     return true;
 }
 
+int string_compare(const struct String str1, const struct String str2) {
+    const String_Length min_len = str1.length < str2.length ? str1.length : str2.length;
+    const int comp = strncmp(str1.data, str2.data, min_len);
+    if (!comp) {
+        return ((int)str1.length - (int)str2.length);
+    }
+    return comp;
+}
+
 // Parses a integer number using base 10, 16, 8 or 2
 static long int string_to_int_base(const char *const data, const String_Length length, const int base, String_Length *const num_len) {
     long int number = 0;

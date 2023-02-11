@@ -58,15 +58,16 @@ static inline struct Token get_token_at(struct Lexer *const lexer, size_t index)
     return ((struct Token *)lexer->tokens.data)[index];
 }
 
-// This function returns true if found an error
-static inline bool add_token(struct Lexer *const lexer, const struct Token tok) {
+static inline int add_token(struct Lexer *const lexer, const struct Token tok) {
     // Check for errors
-    const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
-    if (last_token.type == TOK_FUNCTION) {
-        if ((tok.type != TOK_DELIMITER) || (tok.op != '(')) {
-            print_column(tok.column);
-            print_error("Functions must be followed by parentheses \'(\'!\n");
-            return true;
+    if (lexer->tokens.size > 0) {
+        const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
+        if (last_token.type == TOK_FUNCTION) {
+            if ((tok.type != TOK_DELIMITER) || (tok.op != '(')) {
+                print_column(tok.column);
+                print_error("Functions must be followed by parentheses \'(\'!\n");
+                return EXIT_FAILURE;
+            }
         }
     }
     // Add the token
@@ -76,7 +77,7 @@ static inline bool add_token(struct Lexer *const lexer, const struct Token tok) 
     }
     struct Token *const token = allocator_get(lexer->tokens, index);
     *token = tok;
-    return false;
+    return EXIT_SUCCESS;
 }
 
 static inline struct String parse_name(const struct String string) {
@@ -169,7 +170,7 @@ int lex(struct Lexer *const lexer, struct String line) {
                 }
             }
         }
-        if (add_token(lexer, tok)) {
+        if (add_token(lexer, tok) == EXIT_FAILURE) {
             return EXIT_FAILURE;
         }
     }
@@ -195,7 +196,7 @@ void print_token(const struct Token tok) {
             printf("%g\n", tok.number);
             break;
         case TOK_NAME:
-            printf("VARIABLE  ");
+            printf("NAME      ");
             print_string(tok.name);
             printf("\n");
             break;
