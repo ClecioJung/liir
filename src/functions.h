@@ -55,6 +55,9 @@ extern const int functions_quantity;
 int search_function(const struct String name);
 void print_functions(void);
 
+// Defined on main.c
+double fn_exit(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg);
+
 #endif  // __FUNCTIONS
 
 //------------------------------------------------------------------------------

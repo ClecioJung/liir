@@ -35,7 +35,7 @@
 #include "data-structures/sized_string.h"
 #include "functions.h"
 #include "lex.h"
-#include "print_errors.h"
+#include "printing.h"
 #include "variables.h"
 
 struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size) {

@@ -36,7 +36,7 @@
 #include "data-structures/allocator.h"
 #include "data-structures/sized_string.h"
 #include "functions.h"
-#include "print_errors.h"
+#include "printing.h"
 
 struct Lexer create_lex(const size_t initial_size) {
     struct Lexer lexer = (struct Lexer){
@@ -210,29 +210,22 @@ char *get_token_type(const enum Tok_Types type) {
 void print_token(const struct Token tok) {
     switch (tok.type) {
         case TOK_OPERATOR:
-            printf("OPERATOR  ");
-            printf("%c\n", tok.op);
+            printf(WHITE_FOREGROUND "OPERATOR  %c\n" RESET_FONT, tok.op);
             break;
         case TOK_UNARY_OPERATOR:
-            printf("UNARY OP. ");
-            printf("%c\n", tok.op);
+            printf(WHITE_FOREGROUND "UNARY OP. %c\n" RESET_FONT, tok.op);
             break;
         case TOK_DELIMITER:
-            printf("DELIMITER ");
-            printf("%c\n", tok.op);
+            printf(WHITE_FOREGROUND "DELIMITER %c\n" RESET_FONT, tok.op);
             break;
         case TOK_NUMBER:
-            printf("NUMBER    ");
-            printf("%g\n", tok.number);
+            printf(YELLOW_FOREGROUND "NUMBER    %g\n" RESET_FONT, tok.number);
             break;
         case TOK_NAME:
-            printf("NAME      ");
-            print_string(tok.name);
-            printf("\n");
+            printf(MAGENTA_FOREGROUND "NAME      %.*s\n" RESET_FONT, tok.name.length, tok.name.data);
             break;
         case TOK_FUNCTION:
-            printf("FUNCTION  ");
-            printf("%s\n", functions[tok.function_index].name);
+            printf(CYAN_FOREGROUND "FUNCTION  %s\n" RESET_FONT, functions[tok.function_index].name);
             break;
     }
 }

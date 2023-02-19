@@ -31,7 +31,7 @@
 #include <string.h>
 
 #include "data-structures/sized_string.h"
-#include "print_errors.h"
+#include "printing.h"
 #include "variables.h"
 
 #ifndef M_PI
@@ -40,9 +40,6 @@
 #ifndef M_E
 #define M_E 2.7182818284590452354
 #endif
-
-// Defined on main.c
-extern double fn_exit(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg);
 
 double fn_clear(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)first_arg;

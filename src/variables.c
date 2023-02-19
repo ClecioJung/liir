@@ -32,7 +32,7 @@
 #include <string.h>
 
 #include "data-structures/sized_string.h"
-#include "print_errors.h"
+#include "printing.h"
 
 static inline struct Variable *variable(struct Variables *const vars, const int64_t index) {
     return allocator_get(vars->list, index);

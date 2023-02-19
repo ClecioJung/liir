@@ -37,7 +37,7 @@
 
 #include "data-structures/sized_string.h"
 #include "data-structures/string_buffer.h"
-#include "print_errors.h"
+#include "printing.h"
 
 struct Terminal_Config {
     struct termios old_termios;

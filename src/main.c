@@ -36,7 +36,7 @@
 #include "input_stream.h"
 #include "lex.h"
 #include "parser.h"
-#include "print_errors.h"
+#include "printing.h"
 #include "variables.h"
 
 enum Actions {
@@ -52,16 +52,16 @@ typedef void (*Arg_Function)(void);
 // Table used to concentrate all the information related to the comand line arguments
 struct Arg_Cmd {
     const char *cmd;
-    Arg_Function function;
+    const Arg_Function function;
     const char *usage;
 };
 
-void arguments_usage(void);
-void set_print_tokens(void);
-void set_print_tree(void);
-void set_print_variables(void);
-void set_print_functions(void);
-void set_print_lines(void);
+static void arguments_usage(void);
+static void set_print_tokens(void);
+static void set_print_tree(void);
+static void set_print_variables(void);
+static void set_print_functions(void);
+static void set_print_lines(void);
 
 static const struct Arg_Cmd arg_list[] = {
     {"--help", arguments_usage, "Display this help message."},
@@ -79,7 +79,7 @@ unsigned int max_uint(const unsigned int a, const unsigned int b) {
     return ((a > b) ? a : b);
 }
 
-void arguments_usage(void) {
+static void arguments_usage(void) {
     unsigned int cmd_max_length = 0;
     printf("[Usage] %s [Options]\n", software);
     for (size_t arg_idx = 0; arg_idx < arg_num; arg_idx++) {
@@ -92,24 +92,24 @@ void arguments_usage(void) {
     actions |= ACTION_EXIT;
 }
 
-void set_print_tokens(void) {
+static void set_print_tokens(void) {
     actions |= ACTION_PRINT_TOKENS;
 }
 
-void set_print_tree(void) {
+static void set_print_tree(void) {
     actions |= ACTION_PRINT_TREE;
 }
 
-void set_print_variables(void) {
+static void set_print_variables(void) {
     actions |= ACTION_PRINT_VARIABLES;
 }
 
-void set_print_functions(void) {
+static void set_print_functions(void) {
     print_functions();
     actions |= ACTION_EXIT;
 }
 
-void set_print_lines(void) {
+static void set_print_lines(void) {
     actions |= ACTION_PRINT_LINES;
 }
 
@@ -129,7 +129,7 @@ static inline int parse_argument(const char *const arg) {
     return EXIT_FAILURE;
 }
 
-int parse_arguments(const int argc, const char *const argv[]) {
+static int parse_arguments(const int argc, const char *const argv[]) {
     software = argv[0];
     for (int arg_idx = 1; arg_idx < argc; arg_idx++) {
         if (parse_argument(argv[arg_idx])) {
