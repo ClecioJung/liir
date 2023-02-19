@@ -203,24 +203,107 @@ static inline bool insert_new_op(struct Parser *const parser, int64_t *const hea
     return false;
 }
 
+// Function declaration to allow its use in parse_function
+static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, int64_t *const head_idx);
+
+// Functions may have none, one or two arguments. These are stored in the binary tree, with the
+// first argument at the left node and the second at the right
+// This function is an integrant part of parse_expression, but was factored out to clarify the code
 // This function returns true if found an error
-static bool parse_parentheses(struct Parser *const parser, size_t *const tk_idx, int64_t *const head_idx) {
+static inline bool parse_function(struct Parser *const parser, size_t *const tk_idx, int64_t *const head_idx, const struct Token function_token) {
+    const int64_t function_node_idx = new_node(parser, function_token);
+    if (insert_node_right(parser, head_idx, function_node_idx)) {
+        return true;
+    }
+    if (functions[function_token.function_index].arity == 0) {
+        // There is no argument to be parsed
+        return false;
+    }
+    // The lexer guarantees for us that the next token after a function
+    // with more than one argument is a parentheses '('
+    (*tk_idx)++;
+    const struct Token parentheses_token = *get_lex_tok(parser, (int64_t)*tk_idx);
+    (*tk_idx)++;
+    if (*tk_idx >= parser->lexer->tokens.size) {
+        print_column(parentheses_token.column);
+        print_error("Didn't found the closing parentheses for the function declaration!\n");
+        return true;
+    }
+    int64_t argument_idx = -1;
+    if (parse_expression(parser, tk_idx, &argument_idx)) {
+        return true;
+    }
+    if (argument_idx < 0) {
+        print_column(function_token.column);
+        print_error("It was impossible to parse the first argument to this function!\n");
+        return true;
+    }
+    // Insert first argument in the left
+    get_node_ptr(parser, function_node_idx)->left_idx = argument_idx;
+    if (functions[function_token.function_index].arity >= 2) {
+        // The arguments must be separated by comma
+        const struct Token comma_token = *get_lex_tok(parser, (int64_t)*tk_idx);
+        if ((comma_token.type == TOK_DELIMITER) && (comma_token.op == ',')) {
+            (*tk_idx)++;
+            if ((*tk_idx) < parser->lexer->tokens.size) {
+                if (parse_expression(parser, tk_idx, &argument_idx)) {
+                    return true;
+                }
+                if (argument_idx < 0) {
+                    print_column(function_token.column);
+                    print_error("It was impossible to parse the second argument to this function!\n");
+                    return true;
+                }
+                // Insert second argument to the right
+                get_node_ptr(parser, function_node_idx)->right_idx = argument_idx;
+            }
+        } else {
+            print_column(function_token.column);
+            print_error("It was expected a second argument to the function!\n");
+            return true;
+        }
+    }
+    if (*tk_idx >= parser->lexer->tokens.size) {
+        print_column(parentheses_token.column);
+        print_error("Didn't found the closing parentheses for the function declaration!\n");
+        return true;
+    }
+    const struct Token last_token = *get_lex_tok(parser, (int64_t)*tk_idx);
+    if ((last_token.type != TOK_DELIMITER) || (last_token.op != ')')) {
+        print_column(last_token.column);
+        print_error("Expected a closing parentheses \")\"!\n");
+        return true;
+    }
+    return false;
+}
+
+// This function returns true if found an error
+static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, int64_t *const head_idx) {
     int64_t last_parentheses_idx = -1;
     *head_idx = -1;
-    while ((*tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, (int64_t)*tk_idx)->op != ')')) {
+    for (; *tk_idx < parser->lexer->tokens.size; (*tk_idx)++) {
         const struct Token current_token = *get_lex_tok(parser, (int64_t)*tk_idx);
-        if (parser->lexer->tokens.size >= 1) {
-            const struct Token previous_token = *get_lex_tok(parser, ((int64_t)parser->lexer->tokens.size - 1));
-            if (previous_token.type == TOK_FUNCTION) {
-                print_column(current_token.column);
-                print_error("All functions must be followed by parentheses!\n");
-                return true;
-            }
-        }
-        if ((current_token.type == TOK_DELIMITER) && (current_token.op == '(')) {
-            (*tk_idx)++;
-            if (*tk_idx < parser->lexer->tokens.size) {
-                if (parse_parentheses(parser, tk_idx, &last_parentheses_idx)) {
+        if (current_token.type == TOK_DELIMITER) {
+            switch (current_token.op) {
+            case '(': {
+                (*tk_idx)++;
+                if (*tk_idx >= parser->lexer->tokens.size) {
+                    print_column(current_token.column);
+                    print_error("Mismatched delimiters! Not all parentheses were closed!\n");
+                    return true;
+                }
+                if (parse_expression(parser, tk_idx, &last_parentheses_idx)) {
+                    return true;
+                }
+                if (*tk_idx >= parser->lexer->tokens.size) {
+                    print_column(current_token.column);
+                    print_error("Mismatched delimiters! Not all parentheses were closed!\n");
+                    return true;
+                }
+                const struct Token last_token = *get_lex_tok(parser, (int64_t)*tk_idx);
+                if ((last_token.type != TOK_DELIMITER) || (last_token.op != ')')) {
+                    print_column(last_token.column);
+                    print_error("Expected a closing parentheses \")\"!\n");
                     return true;
                 }
                 // If last_parentheses_idx is negative, there is no new node to insert
@@ -228,11 +311,18 @@ static bool parse_parentheses(struct Parser *const parser, size_t *const tk_idx,
                     if (insert_node_right(parser, head_idx, last_parentheses_idx)) {
                         return true;
                     }
-                }
-            }
-            if (*tk_idx >= parser->lexer->tokens.size) {
+                }                    
+            } break;
+            case ')':
+            case ',':
+                return false;
+            default:
                 print_column(current_token.column);
-                print_error("Mismatched delimiters! Not all parentheses were closed!\n");
+                print_error("Unrecognized delimiter at parsing phase!\n");
+                return true;
+            }
+        } else if (current_token.type == TOK_FUNCTION) {
+            if (parse_function(parser, tk_idx, head_idx, current_token)) {
                 return true;
             }
         } else if (current_token.type == TOK_OPERATOR) {
@@ -246,7 +336,6 @@ static bool parse_parentheses(struct Parser *const parser, size_t *const tk_idx,
                 return true;
             }
         }
-        (*tk_idx)++;
     }
     return false;
 }
@@ -261,23 +350,27 @@ int64_t parse(struct Parser *const parser) {
     allocator_free_all(&parser->nodes);
     size_t tk_idx = 0;
     int64_t head_idx = -1;
-    if (parse_parentheses(parser, &tk_idx, &head_idx) || (head_idx < 0)) {
+    if (parse_expression(parser, &tk_idx, &head_idx) || (head_idx < 0)) {
         return -1;
     }
-    if ((tk_idx < parser->lexer->tokens.size) && (get_lex_tok(parser, (int64_t)tk_idx)->op == ')')) {
-        print_column(get_lex_tok(parser, (int64_t)tk_idx)->column);
-        print_error("Mismatched delimiters! Unexpected closing parentheses!\n");
+    // Couldn't parse all the expression
+    if (tk_idx < parser->lexer->tokens.size) {
+        const struct Token next_token = *get_lex_tok(parser, (int64_t)tk_idx);
+        print_column(next_token.column);
+        print_error("Unexpected %s at parsing phase!\n", get_token_type(next_token.type));
         return -1;
-    }
-    if ((tk_idx == parser->lexer->tokens.size) && (parser->lexer->tokens.size >= 1)) {
-        const struct Token last_token = *get_lex_tok(parser, ((int64_t)parser->lexer->tokens.size - 1));
-        if (last_token.type == TOK_FUNCTION) {
-            print_column(last_token.column);
-            print_error("All functions must be folowed by parentheses!\n");
-            return -1;
-        }
     }
     return head_idx;
+}
+
+static struct Fn_Arg build_fn_arg(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status) {
+    struct Fn_Arg arg = (struct Fn_Arg){
+        .value = evaluate(parser, node_idx, status),
+        // If the function argument is a name (possible a variable), pass it to the function to be used as a reference
+        .name = (is_valid_idx(parser, node_idx) && (get_tok(parser, node_idx).type == TOK_NAME)) ?
+                get_tok(parser, node_idx).name : (struct String){0},
+    };
+    return arg;
 }
 
 static inline double perform_function_call(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status) {
@@ -288,27 +381,30 @@ static inline double perform_function_call(struct Parser *const parser, const in
         *status = Eval_Error;
         return NAN;
     }
-    const int64_t right_idx = get_right_idx(parser, node_idx);
-    if ((function.arity >= 1) && is_invalid_idx(parser, right_idx)) {
+    const int64_t left_idx = get_left_idx(parser, node_idx);
+    if ((function.arity >= 1) && is_invalid_idx(parser, left_idx)) {
         print_column(get_tok(parser, node_idx).column);
         print_warning("Did you forget to pass a argument to the function \"%s\"?\n", function.name);
+    }
+    const int64_t right_idx = get_right_idx(parser, node_idx);
+    if ((function.arity >= 2) && is_invalid_idx(parser, right_idx)) {
+        print_column(get_tok(parser, node_idx).column);
+        print_warning("Did you forget to pass the second argument to the function \"%s\"?\n", function.name);
     }
     if ((!function.return_value) && (*status != Eval_Error)) {
         *status = Eval_Dont_Print;
     }
-    struct Fn_Arg arg = (struct Fn_Arg){
-        .value = evaluate(parser, right_idx, status),
-        .name = {0},
-    };
+    struct Fn_Arg left_arg = build_fn_arg(parser, left_idx, status);
     // If got error at evaluation, don't call the function
     if (*status == Eval_Error) {
         return NAN;
     }
-    // If the function argument is a name (possible a variable), pass it to the function to be used as a reference
-    if (is_valid_idx(parser, right_idx) && (get_tok(parser, right_idx).type == TOK_NAME)) {
-        arg.name = get_tok(parser, right_idx).name;
+    struct Fn_Arg right_arg = build_fn_arg(parser, right_idx, status);
+    // If got error at evaluation, don't call the function
+    if (*status == Eval_Error) {
+        return NAN;
     }
-    return function.fn(parser->vars, arg);
+    return function.fn(parser->vars, left_arg, right_arg);
 }
 
 double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status) {

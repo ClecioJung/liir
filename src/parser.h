@@ -41,8 +41,8 @@ struct Token_Node {
 };
 
 struct Parser {
-    struct Lexer *lexer;
-    struct Variables *vars;
+    const struct Lexer *const lexer;
+    struct Variables *const vars;
     // Structure used to save the nodes of the AST
     struct Allocator nodes;
 };

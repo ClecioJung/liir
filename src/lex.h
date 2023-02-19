@@ -34,9 +34,9 @@
 #include "data-structures/sized_string.h"
 
 enum Tok_Types {
-    TOK_OPERATOR,        // +, -, *, /, ^ and =
+    TOK_OPERATOR,        // '+', '-', '*', '/', '^' or '='
     TOK_UNARY_OPERATOR,  // -
-    TOK_DELIMITER,       // '(' and ')'
+    TOK_DELIMITER,       // '(', ')' or ','
     TOK_NUMBER,
     TOK_NAME,
     TOK_FUNCTION,
@@ -60,7 +60,7 @@ struct Lexer {
 
 struct Lexer create_lex(const size_t initial_size);
 void destroy_lex(struct Lexer *const lexer);
-int lex(struct Lexer *const lexer, const struct String line);
+bool lex(struct Lexer *const lexer, const struct String line);
 char *get_token_type(const enum Tok_Types type);
 void print_token(const struct Token tok);
 void print_tokens(struct Lexer *const lexer);

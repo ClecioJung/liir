@@ -35,18 +35,18 @@
 // Struct used to store the argument of a function. It may contain a value,
 // a name (possible referente to a variable), or both
 struct Fn_Arg {
-    double value;
-    struct String name;
+    const double value;
+    const struct String name;
 };
 
-typedef double (*Function_Pointer)(struct Variables *const vars, struct Fn_Arg arg);
+typedef double (*Function_Pointer)(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg);
 
 struct Function {
-    char *name;
-    char *description;
-    int arity;          // number of expected arguments (0, 1 or 2)
-    bool return_value;  // the function returns a value?
-    Function_Pointer fn;
+    const char *name;
+    const char *description;
+    const int arity;          // number of expected arguments (0, 1 or 2)
+    const bool return_value;  // the function returns a value?
+    const Function_Pointer fn;
 };
 
 extern const struct Function functions[];

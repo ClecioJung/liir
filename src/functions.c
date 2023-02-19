@@ -42,27 +42,30 @@
 #endif
 
 // Defined on main.c
-extern double fn_exit(struct Variables *const vars, const struct Fn_Arg arg);
+extern double fn_exit(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg);
 
-double fn_clear(struct Variables *const vars, const struct Fn_Arg arg) {
-    (void)arg;
+double fn_clear(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)first_arg;
+    (void)second_arg;
     clear_variables(vars);
     return NAN;
 }
 
-double fn_delete(struct Variables *const vars, const struct Fn_Arg arg) {
-    if ((arg.name.data == NULL) || (arg.name.length == 0)) {
+double fn_delete(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)second_arg;
+    if ((first_arg.name.data == NULL) || (first_arg.name.length == 0)) {
         print_error("The function \"delete\" expects a reference to a variable as argument\n");
         return NAN;
     }
-    if (delete_variable(vars, arg.name) == EXIT_FAILURE) {
-        print_error("The variable %.*s does not exist!\n", arg.name.length, arg.name.data);
+    if (delete_variable(vars, first_arg.name) == EXIT_FAILURE) {
+        print_error("The variable %.*s does not exist!\n", first_arg.name.length, first_arg.name.data);
     }
     return NAN;
 }
 
-double fn_variables(struct Variables *const vars, const struct Fn_Arg arg) {
-    (void)arg;
+double fn_variables(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)first_arg;
+    (void)second_arg;
     if (variable_list_is_empty(vars)) {
         printf("The variables list is empty!\n");
     } else {
@@ -71,82 +74,209 @@ double fn_variables(struct Variables *const vars, const struct Fn_Arg arg) {
     return NAN;
 }
 
-double fn_functions(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_functions(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    (void)arg;
+    (void)first_arg;
+    (void)second_arg;
     print_functions();
     return NAN;
 }
 
-double fn_euler(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_euler(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    (void)arg;
+    (void)first_arg;
+    (void)second_arg;
     return M_E;
 }
 
-double fn_pi(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_pi(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    (void)arg;
+    (void)first_arg;
+    (void)second_arg;
     return M_PI;
 }
-double fn_sqrt(struct Variables *const vars, const struct Fn_Arg arg) {
+
+double fn_nan(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return sqrt(arg.value);
+    (void)first_arg;
+    (void)second_arg;
+    return nan("");
 }
 
-double fn_cbrt(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_ceil(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return cbrt(arg.value);
+    (void)second_arg;
+    return ceil(first_arg.value);
 }
 
-double fn_exp(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_floor(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return exp(arg.value);
+    (void)second_arg;
+    return floor(first_arg.value);
 }
 
-double fn_log(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_trunc(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return log(arg.value);
+    (void)second_arg;
+    return trunc(first_arg.value);
 }
 
-double fn_log10(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_round(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return log10(arg.value);
+    (void)second_arg;
+    return round(first_arg.value);
 }
 
-double fn_log2(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_abs(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return log2(arg.value);
+    (void)second_arg;
+    return fabs(first_arg.value);
 }
 
-double fn_sin(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_sqrt(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return sin(arg.value);
+    (void)second_arg;
+    return sqrt(first_arg.value);
 }
 
-double fn_cos(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_cbrt(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return cos(arg.value);
+    (void)second_arg;
+    return cbrt(first_arg.value);
 }
 
-double fn_tan(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_exp(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return tan(arg.value);
+    (void)second_arg;
+    return exp(first_arg.value);
 }
 
-double fn_asin(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_exp2(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return asin(arg.value);
+    (void)second_arg;
+    return exp2(first_arg.value);
 }
 
-double fn_acos(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_log(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return acos(arg.value);
+    (void)second_arg;
+    return log(first_arg.value);
 }
 
-double fn_atan(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_log10(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return atan(arg.value);
+    (void)second_arg;
+    return log10(first_arg.value);
+}
+
+double fn_log2(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return log2(first_arg.value);
+}
+
+double fn_erf(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return erf(first_arg.value);
+}
+
+double fn_gamma(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return tgamma(first_arg.value);
+}
+
+double fn_sin(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return sin(first_arg.value);
+}
+
+double fn_cos(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return cos(first_arg.value);
+}
+
+double fn_tan(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return tan(first_arg.value);
+}
+
+double fn_asin(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return asin(first_arg.value);
+}
+
+double fn_acos(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return acos(first_arg.value);
+}
+
+double fn_atan(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return atan(first_arg.value);
+}
+
+double fn_sinh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return sinh(first_arg.value);
+}
+
+double fn_cosh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return cosh(first_arg.value);
+}
+
+double fn_tanh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return tanh(first_arg.value);
+}
+
+double fn_asinh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return asinh(first_arg.value);
+}
+
+double fn_acosh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return acosh(first_arg.value);
+}
+
+double fn_atanh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    (void)second_arg;
+    return atanh(first_arg.value);
+}
+
+double fn_pow(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    return pow(first_arg.value, second_arg.value);
+}
+
+double fn_atan2(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    return atan2(first_arg.value, second_arg.value);
+}
+
+double fn_hypot(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    return hypot(first_arg.value, second_arg.value);
+}
+
+double fn_mod(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)vars;
+    return fmod(first_arg.value, second_arg.value);
 }
 
 const struct Function functions[] = {
@@ -159,14 +289,14 @@ const struct Function functions[] = {
     },
     {
         .name = "clear",
-        .description = "clear all variables from memory",
+        .description = "Clear all variables from memory",
         .arity = 0,
         .return_value = false,
         .fn = &fn_clear,
     },
     {
         .name = "delete",
-        .description = "deletes a variable from memory",
+        .description = "Deletes a variable from memory",
         .arity = 1,
         .return_value = false,
         .fn = &fn_delete,
@@ -200,6 +330,48 @@ const struct Function functions[] = {
         .fn = &fn_pi,
     },
     {
+        .name = "nan",
+        .description = "Returns a quiet NaN (Not-A-Number) value",
+        .arity = 0,
+        .return_value = true,
+        .fn = &fn_nan,
+    },
+    {
+        .name = "ceil",
+        .description = "Return the smallest integral value that is not less than it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_ceil,
+    },
+    {
+        .name = "floor",
+        .description = "Returns the largest integral value that is not greather than it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_floor,
+    },
+    {
+        .name = "trunc",
+        .description = "Round it's argument to the nearest integer value that is not larger in magnitude than it",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_trunc,
+    },
+    {
+        .name = "round",
+        .description = "Returns the integral value that is nearest to it's argument, with halfway cases rounded away from zero",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_round,
+    },
+    {
+        .name = "abs",
+        .description = "Returns the absolute value of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_abs,
+    },
+    {
         .name = "sqrt",
         .description = "Returns the square root of it's argument",
         .arity = 1,
@@ -221,6 +393,13 @@ const struct Function functions[] = {
         .fn = &fn_exp,
     },
     {
+        .name = "exp2",
+        .description = "Returns the exponential base 2 of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_exp2,
+    },
+    {
         .name = "ln",
         .description = "Returns the natural logarithm of it's argument",
         .arity = 1,
@@ -240,6 +419,20 @@ const struct Function functions[] = {
         .arity = 1,
         .return_value = true,
         .fn = &fn_log2,
+    },
+    {
+        .name = "erf",
+        .description = "Returns the error function of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_erf,
+    },
+    {
+        .name = "gamma",
+        .description = "Returns the gamma function of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_gamma,
     },
     {
         .name = "sin",
@@ -282,6 +475,78 @@ const struct Function functions[] = {
         .arity = 1,
         .return_value = true,
         .fn = &fn_atan,
+    },
+    {
+        .name = "sinh",
+        .description = "Returns the hyperbolic sine function of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_sinh,
+    },
+    {
+        .name = "cosh",
+        .description = "Returns the hyperbolic cosine function of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_cosh,
+    },
+    {
+        .name = "tanh",
+        .description = "Returns the hyperbolic tangent function of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_tanh,
+    },
+    {
+        .name = "asinh",
+        .description = "Returns the inverse hyperbolic sine function of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_asinh,
+    },
+    {
+        .name = "acosh",
+        .description = "Returns the inverse hyperbolic cosine function of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_acosh,
+    },
+    {
+        .name = "atanh",
+        .description = "Returns the inverse hyperbolic tangent function of it's argument",
+        .arity = 1,
+        .return_value = true,
+        .fn = &fn_atanh,
+    },
+    {
+        .name = "pow",
+        .description = "Returns it's first argument raised to the power of the second",
+        .arity = 2,
+        .return_value = true,
+        .fn = &fn_pow,
+    },
+    {
+        .name = "atan2",
+        .description = "Returns the inverse tangent function, considering the signs of the arguments to determine the quadrant of the result",
+        .arity = 2,
+        .return_value = true,
+        .fn = &fn_atan2,
+    },
+    {
+        .name = "hypot",
+        .description = "Returns the square root of the sum of the squares of it's arguments",
+        .arity = 2,
+        .return_value = true,
+        .fn = &fn_hypot,
+        
+    },
+    {
+        .name = "mod",
+        .description = "Returns the remainder of the division of it's arguments (rounded towards zero)",
+        .arity = 2,
+        .return_value = true,
+        .fn = &fn_mod,
+        
     },
 };
 

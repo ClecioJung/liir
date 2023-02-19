@@ -139,9 +139,10 @@ int parse_arguments(const int argc, const char *const argv[]) {
     return EXIT_SUCCESS;
 }
 
-double fn_exit(struct Variables *const vars, const struct Fn_Arg arg) {
+double fn_exit(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    (void)arg;
+    (void)first_arg;
+    (void)second_arg;
     actions |= ACTION_EXIT;
     return NAN;
 }
@@ -163,7 +164,8 @@ int main(const int argc, const char *const argv[]) {
     struct Parser parser = create_parser(&lexer, &vars, 1024);
     while ((actions & ACTION_EXIT) == 0) {
         struct String line = get_line_from_input(&input_stream);
-        if (lex(&lexer, line) != EXIT_FAILURE) {
+        if (!lex(&lexer, line)) {
+            // If didn't found an error while executing the lexer
             int64_t head_idx = parse(&parser);
             if (head_idx >= 0) {
                 enum Evaluation_Status status = Eval_OK;

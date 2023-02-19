@@ -58,15 +58,16 @@ static inline struct Token get_token_at(struct Lexer *const lexer, size_t index)
     return ((struct Token *)lexer->tokens.data)[index];
 }
 
-static inline int add_token(struct Lexer *const lexer, const struct Token tok) {
+// This function returns true if found an error
+static inline bool add_token(struct Lexer *const lexer, const struct Token tok) {
     // Check for errors
     if (lexer->tokens.size > 0) {
         const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
-        if (last_token.type == TOK_FUNCTION) {
-            if ((tok.type != TOK_DELIMITER) || (tok.op != '(')) {
-                print_column(tok.column);
-                print_error("Functions must be followed by parentheses \'(\'!\n");
-                return EXIT_FAILURE;
+        if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
+            if ((tok.type == TOK_DELIMITER) && (tok.op != '(')) {
+                print_column(last_token.column);
+                print_error("Functions that accept one or more argument, must be followed by parentheses \'(\'!\n");
+                return true;
             }
         }
     }
@@ -77,7 +78,7 @@ static inline int add_token(struct Lexer *const lexer, const struct Token tok) {
     }
     struct Token *const token = allocator_get(lexer->tokens, index);
     *token = tok;
-    return EXIT_SUCCESS;
+    return false;
 }
 
 static inline struct String parse_name(const struct String string) {
@@ -103,7 +104,8 @@ static void advance_line(struct String *const line, int *const column, String_Le
     *column += value;
 }
 
-int lex(struct Lexer *const lexer, struct String line) {
+// This function returns true if found an error
+bool lex(struct Lexer *const lexer, struct String line) {
     if (lexer == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
@@ -157,7 +159,8 @@ int lex(struct Lexer *const lexer, struct String line) {
                     break;
                 }
                 case '(':
-                case ')': {
+                case ')':
+                case ',': {
                     tok.type = TOK_DELIMITER;
                     tok.op = c;
                     advance_line(&line, &column, 1);
@@ -166,15 +169,24 @@ int lex(struct Lexer *const lexer, struct String line) {
                 default: {
                     print_column(column);
                     print_error("Unrecognized character at lexical analysis: %c\n", c);
-                    return EXIT_FAILURE;
+                    return true;
                 }
             }
         }
-        if (add_token(lexer, tok) == EXIT_FAILURE) {
-            return EXIT_FAILURE;
+        if (add_token(lexer, tok)) {
+            return true;
         }
     }
-    return EXIT_SUCCESS;
+    // Check for errors
+    if (lexer->tokens.size > 0) {
+        const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
+        if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
+            print_column(last_token.column);
+            print_error("Functions with one or more argument must be followed by parentheses \'(\'!\n");
+            return true;
+        }
+    }
+    return false;
 }
 
 char *get_token_type(const enum Tok_Types type) {
