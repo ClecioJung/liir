@@ -56,6 +56,10 @@ long int string_to_integer(const struct String string, String_Length *const num_
 double string_to_double(const struct String string, String_Length *const num_len);
 double parse_number(const struct String string, String_Length *const num_len);
 
+// Function used to parse a name, composed of alphanumeric characters and underline
+// The beginning of the name cannot contain numbers
+struct String parse_name(const struct String string);
+
 #endif  // __SIZED_STRING
 
 //------------------------------------------------------------------------------

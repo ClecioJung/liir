@@ -81,20 +81,6 @@ static inline bool add_token(struct Lexer *const lexer, const struct Token tok) 
     return false;
 }
 
-static inline struct String parse_name(const struct String string) {
-    String_Length index = 0;
-    for (; index < string.length; index++) {
-        const char c = string.data[index];
-        if (!isalnum(c) && (c != '_')) {
-            break;
-        }
-    }
-    return (struct String){
-        .data = string.data,
-        .length = index,
-    };
-}
-
 static void advance_line(struct String *const line, int *const column, String_Length value) {
     if (value > line->length) {
         value = line->length;

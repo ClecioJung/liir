@@ -227,6 +227,23 @@ double parse_number(const struct String string, String_Length *const num_len) {
     return string_to_double(string, num_len);
 }
 
+struct String parse_name(const struct String string) {
+    if ((string.length == 0) || isdigit(string.data[0])) {
+        return (struct String){0};
+    }
+    String_Length index = 0;
+    for (; index < string.length; index++) {
+        const char c = string.data[index];
+        if (!isalnum(c) && (c != '_')) {
+            break;
+        }
+    }
+    return (struct String){
+        .data = string.data,
+        .length = index,
+    };
+}
+
 //------------------------------------------------------------------------------
 // END
 //------------------------------------------------------------------------------

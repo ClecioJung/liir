@@ -255,6 +255,7 @@ void load_variables_from_file(struct Variables *const vars, const char *const fi
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
+    // Most systems do not allow for a line greather than 4 kbytes
     char line[4096];
     FILE *const file = fopen(file_name, "rb");
 	if (file == NULL) {
@@ -267,7 +268,11 @@ void load_variables_from_file(struct Variables *const vars, const char *const fi
             continue;
         }
         remove_whitespaces(&key);
-        if (*key == '\0') {
+        const struct String string_key = create_string(key);
+        const struct String name = parse_name(string_key);
+        if (name.length != string_key.length) {
+            // The key is not a valid name
+            print_error("\"%.*s\" is not a valid name!\n", string_key.length, string_key.data);
             continue;
         }
         char *value = strtok(NULL, "=\n");
@@ -275,8 +280,15 @@ void load_variables_from_file(struct Variables *const vars, const char *const fi
             continue;
         }
         remove_whitespaces(&value);
-        double number = parse_number(create_string(value), NULL);
-        assign_variable(vars, create_string(key), number);
+        const struct String string_value = create_string(value);
+        String_Length length;
+        double number = parse_number(string_value, &length);
+        if (length != string_value.length) {
+            // The value is not a valid number
+            print_error("\"%.*s\" is not a valid value!\n", string_value.length, string_value.data);
+            continue;
+        }
+        assign_variable(vars, string_key, number);
         printf("%s = %s\n", key, value);
     }
     fclose(file);
