@@ -199,21 +199,21 @@ double string_to_double(const struct String string, String_Length *const num_len
 // Parses a generic number
 double parse_number(const struct String string, String_Length *const num_len) {
     // Check if is a integer and parses it
-    if (string.data[0] == '0') {
+    if ((string.length > 0) && (string.data[0] == '0')) {
         if (string.length >= 3) {
             String_Length int_len = 0;
             double number = NAN;
             const char c = (char)tolower(string.data[1]);
             switch (c) {
-                case 'x':  // It is a hexadecimal integer because it begins with "0x"
-                    number = (double)string_to_int_base(&string.data[2], (string.length - 2), 16, &int_len);
-                    break;
-                case 'o':  // It is a octal integer because it begins with "0o"
-                    number = (double)string_to_int_base(&string.data[2], (string.length - 2), 8, &int_len);
-                    break;
-                case 'b':  // It is a binary integer because it begins with "0b"
-                    number = (double)string_to_int_base(&string.data[2], (string.length - 2), 2, &int_len);
-                    break;
+            case 'x':  // It is a hexadecimal integer because it begins with "0x"
+                number = (double)string_to_int_base(&string.data[2], (string.length - 2), 16, &int_len);
+                break;
+            case 'o':  // It is a octal integer because it begins with "0o"
+                number = (double)string_to_int_base(&string.data[2], (string.length - 2), 8, &int_len);
+                break;
+            case 'b':  // It is a binary integer because it begins with "0b"
+                number = (double)string_to_int_base(&string.data[2], (string.length - 2), 2, &int_len);
+                break;
             }
             if (int_len != 0) {
                 if (num_len != NULL) {

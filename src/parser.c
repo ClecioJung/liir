@@ -420,86 +420,86 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
     switch (get_tok(parser, node_idx).type) {
         case TOK_OPERATOR:
             switch (get_tok(parser, node_idx).op) {
-                case '+':
-                    if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                        print_column(get_tok(parser, node_idx).column);
-                        print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
-                        return NAN;
-                    }
-                    return (evaluate(parser, get_left_idx(parser, node_idx), status) + evaluate(parser, get_right_idx(parser, node_idx), status));
-                case '-':
-                    if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                        print_column(get_tok(parser, node_idx).column);
-                        print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
-                        return NAN;
-                    }
-                    return (evaluate(parser, get_left_idx(parser, node_idx), status) - evaluate(parser, get_right_idx(parser, node_idx), status));
-                case '*':
-                    if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                        print_column(get_tok(parser, node_idx).column);
-                        print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
-                        return NAN;
-                    }
-                    return (evaluate(parser, get_left_idx(parser, node_idx), status) * evaluate(parser, get_right_idx(parser, node_idx), status));
-                case '/':
-                    if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                        print_column(get_tok(parser, node_idx).column);
-                        print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
-                        return NAN;
-                    }
-                    return (evaluate(parser, get_left_idx(parser, node_idx), status) / evaluate(parser, get_right_idx(parser, node_idx), status));
-                case '^':
-                    if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                        print_column(get_tok(parser, node_idx).column);
-                        print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
-                        return NAN;
-                    }
-                    return pow(evaluate(parser, get_left_idx(parser, node_idx), status), evaluate(parser, get_right_idx(parser, node_idx), status));
-                case '=': {
-                    if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                        print_column(get_tok(parser, node_idx).column);
-                        print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
-                        return NAN;
-                    }
-                    if (get_tok(parser, get_left_idx(parser, node_idx)).type == TOK_FUNCTION) {
-                        print_column(get_tok(parser, get_left_idx(parser, node_idx)).column);
-                        print_error("Cannot create a variable named \"%s\", because already exists a function with this name!\n", functions[get_tok(parser, get_left_idx(parser, node_idx)).function_index].name);
-                        *status = Eval_Error;
-                        return NAN;
-                    }
-                    if (get_tok(parser, get_left_idx(parser, node_idx)).type != TOK_NAME) {
-                        print_column(get_tok(parser, get_left_idx(parser, node_idx)).column);
-                        print_error("Expected variable name for atribution!\n");
-                        *status = Eval_Error;
-                        return NAN;
-                    }
-                    const double result = evaluate(parser, get_right_idx(parser, node_idx), status);
-                    if (*status != Eval_Error) {
-                        return assign_variable(parser->vars, get_tok(parser, get_left_idx(parser, node_idx)).name, result);
-                    } else {
-                        return NAN;
-                    }
-                }
-                default:
+            case '+':
+                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
                     print_column(get_tok(parser, node_idx).column);
-                    print_error("Invalid binary operator at evaluation phase: %c\n", get_tok(parser, node_idx).op);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                    return NAN;
+                }
+                return (evaluate(parser, get_left_idx(parser, node_idx), status) + evaluate(parser, get_right_idx(parser, node_idx), status));
+            case '-':
+                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
+                    print_column(get_tok(parser, node_idx).column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                    return NAN;
+                }
+                return (evaluate(parser, get_left_idx(parser, node_idx), status) - evaluate(parser, get_right_idx(parser, node_idx), status));
+            case '*':
+                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
+                    print_column(get_tok(parser, node_idx).column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                    return NAN;
+                }
+                return (evaluate(parser, get_left_idx(parser, node_idx), status) * evaluate(parser, get_right_idx(parser, node_idx), status));
+            case '/':
+                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
+                    print_column(get_tok(parser, node_idx).column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                    return NAN;
+                }
+                return (evaluate(parser, get_left_idx(parser, node_idx), status) / evaluate(parser, get_right_idx(parser, node_idx), status));
+            case '^':
+                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
+                    print_column(get_tok(parser, node_idx).column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                    return NAN;
+                }
+                return pow(evaluate(parser, get_left_idx(parser, node_idx), status), evaluate(parser, get_right_idx(parser, node_idx), status));
+            case '=': {
+                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
+                    print_column(get_tok(parser, node_idx).column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                    return NAN;
+                }
+                if (get_tok(parser, get_left_idx(parser, node_idx)).type == TOK_FUNCTION) {
+                    print_column(get_tok(parser, get_left_idx(parser, node_idx)).column);
+                    print_error("Cannot create a variable named \"%s\", because already exists a function with this name!\n", functions[get_tok(parser, get_left_idx(parser, node_idx)).function_index].name);
                     *status = Eval_Error;
                     return NAN;
+                }
+                if (get_tok(parser, get_left_idx(parser, node_idx)).type != TOK_NAME) {
+                    print_column(get_tok(parser, get_left_idx(parser, node_idx)).column);
+                    print_error("Expected variable name for atribution!\n");
+                    *status = Eval_Error;
+                    return NAN;
+                }
+                const double result = evaluate(parser, get_right_idx(parser, node_idx), status);
+                if (*status != Eval_Error) {
+                    return assign_variable(parser->vars, get_tok(parser, get_left_idx(parser, node_idx)).name, result);
+                } else {
+                    return NAN;
+                }
+            }
+            default:
+                print_column(get_tok(parser, node_idx).column);
+                print_error("Invalid binary operator at evaluation phase: %c\n", get_tok(parser, node_idx).op);
+                *status = Eval_Error;
+                return NAN;
             }
         case TOK_UNARY_OPERATOR:
             switch (get_tok(parser, node_idx).op) {
-                case '-':
-                    if (is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                        print_column(get_tok(parser, node_idx).column);
-                        print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
-                        return NAN;
-                    }
-                    return (-evaluate(parser, get_right_idx(parser, node_idx), status));
-                default:
+            case '-':
+                if (is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
                     print_column(get_tok(parser, node_idx).column);
-                    print_error("Invalid unary operator at evaluation phase: %c\n", get_tok(parser, node_idx).op);
-                    *status = Eval_Error;
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
                     return NAN;
+                }
+                return (-evaluate(parser, get_right_idx(parser, node_idx), status));
+            default:
+                print_column(get_tok(parser, node_idx).column);
+                print_error("Invalid unary operator at evaluation phase: %c\n", get_tok(parser, node_idx).op);
+                *status = Eval_Error;
+                return NAN;
             }
         case TOK_NUMBER: {
             const int64_t right_idx = get_right_idx(parser, node_idx);

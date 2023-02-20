@@ -122,41 +122,41 @@ bool lex(struct Lexer *const lexer, struct String line) {
             advance_line(&line, &column, name.length);
         } else {
             switch (c) {
-                case '+':
-                case '-':
-                case '*':
-                case '/':
-                case '^':
-                case '=': {
-                    tok.type = TOK_OPERATOR;
-                    tok.op = c;
-                    // Check for unary operator
-                    if (c == '-') {
-                        if (lexer->tokens.size == 0) {
+            case '+':
+            case '-':
+            case '*':
+            case '/':
+            case '^':
+            case '=': {
+                tok.type = TOK_OPERATOR;
+                tok.op = c;
+                // Check for unary operator
+                if (c == '-') {
+                    if (lexer->tokens.size == 0) {
+                        tok.type = TOK_UNARY_OPERATOR;
+                    } else {
+                        const enum Tok_Types tok_type = get_token_at(lexer, lexer->tokens.size - 1).type;
+                        if ((tok_type == TOK_OPERATOR) || (tok_type == TOK_UNARY_OPERATOR) || (tok_type == TOK_DELIMITER)) {
                             tok.type = TOK_UNARY_OPERATOR;
-                        } else {
-                            const enum Tok_Types tok_type = get_token_at(lexer, lexer->tokens.size - 1).type;
-                            if ((tok_type == TOK_OPERATOR) || (tok_type == TOK_UNARY_OPERATOR) || (tok_type == TOK_DELIMITER)) {
-                                tok.type = TOK_UNARY_OPERATOR;
-                            }
                         }
                     }
-                    advance_line(&line, &column, 1);
-                    break;
                 }
-                case '(':
-                case ')':
-                case ',': {
-                    tok.type = TOK_DELIMITER;
-                    tok.op = c;
-                    advance_line(&line, &column, 1);
-                    break;
-                }
-                default: {
-                    print_column(column);
-                    print_error("Unrecognized character at lexical analysis: %c\n", c);
-                    return true;
-                }
+                advance_line(&line, &column, 1);
+                break;
+            }
+            case '(':
+            case ')':
+            case ',': {
+                tok.type = TOK_DELIMITER;
+                tok.op = c;
+                advance_line(&line, &column, 1);
+                break;
+            }
+            default: {
+                print_column(column);
+                print_error("Unrecognized character at lexical analysis: %c\n", c);
+                return true;
+            }
             }
         }
         if (add_token(lexer, tok)) {
@@ -177,42 +177,42 @@ bool lex(struct Lexer *const lexer, struct String line) {
 
 char *get_token_type(const enum Tok_Types type) {
     switch (type) {
-        case TOK_OPERATOR:
-            return "operator";
-        case TOK_UNARY_OPERATOR:
-            return "unary operator";
-        case TOK_DELIMITER:
-            return "delimiter";
-        case TOK_NUMBER:
-            return "number";
-        case TOK_NAME:
-            return "name";
-        case TOK_FUNCTION:
-            return "function";
+    case TOK_OPERATOR:
+        return "operator";
+    case TOK_UNARY_OPERATOR:
+        return "unary operator";
+    case TOK_DELIMITER:
+        return "delimiter";
+    case TOK_NUMBER:
+        return "number";
+    case TOK_NAME:
+        return "name";
+    case TOK_FUNCTION:
+        return "function";
     }
     return NULL;
 }
 
 void print_token(const struct Token tok) {
     switch (tok.type) {
-        case TOK_OPERATOR:
-            printf(WHITE_FOREGROUND "OPERATOR  %c\n" RESET_FONT, tok.op);
-            break;
-        case TOK_UNARY_OPERATOR:
-            printf(WHITE_FOREGROUND "UNARY OP. %c\n" RESET_FONT, tok.op);
-            break;
-        case TOK_DELIMITER:
-            printf(WHITE_FOREGROUND "DELIMITER %c\n" RESET_FONT, tok.op);
-            break;
-        case TOK_NUMBER:
-            printf(YELLOW_FOREGROUND "NUMBER    %g\n" RESET_FONT, tok.number);
-            break;
-        case TOK_NAME:
-            printf(MAGENTA_FOREGROUND "NAME      %.*s\n" RESET_FONT, tok.name.length, tok.name.data);
-            break;
-        case TOK_FUNCTION:
-            printf(CYAN_FOREGROUND "FUNCTION  %s\n" RESET_FONT, functions[tok.function_index].name);
-            break;
+    case TOK_OPERATOR:
+        printf(WHITE_FOREGROUND "OPERATOR  %c\n" RESET_FONT, tok.op);
+        break;
+    case TOK_UNARY_OPERATOR:
+        printf(WHITE_FOREGROUND "UNARY OP. %c\n" RESET_FONT, tok.op);
+        break;
+    case TOK_DELIMITER:
+        printf(WHITE_FOREGROUND "DELIMITER %c\n" RESET_FONT, tok.op);
+        break;
+    case TOK_NUMBER:
+        printf(YELLOW_FOREGROUND "NUMBER    %g\n" RESET_FONT, tok.number);
+        break;
+    case TOK_NAME:
+        printf(MAGENTA_FOREGROUND "NAME      %.*s\n" RESET_FONT, tok.name.length, tok.name.data);
+        break;
+    case TOK_FUNCTION:
+        printf(CYAN_FOREGROUND "FUNCTION  %s\n" RESET_FONT, functions[tok.function_index].name);
+        break;
     }
 }
 

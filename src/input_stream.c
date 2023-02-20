@@ -80,6 +80,43 @@ void initialize_input_stream(void) {
     input_stream.lines = create_string_buffer();
 }
 
+static inline String_Length jump_words_right(const String_Node_Index line_index, const String_Length position) {
+    const struct String_Node *const string = get_node_from_index(&input_stream.lines, line_index);
+    const String_Length length = string->length;
+    if (position == length) {
+        return length;
+    }
+    String_Length i = position + 1;
+    for (; i < length; i++) {
+        if (isspace(string->data[position])) {
+            if (!isspace(string->data[i])) {
+                break;
+            }
+        } else if (!isalnum(string->data[i])) {
+            break;
+        }
+    }
+    return i;
+}
+
+static inline String_Length jump_words_left(const String_Node_Index line_index, const String_Length position) {
+    if (position == 0) {
+        return 0;
+    }
+    const struct String_Node *const string = get_node_from_index(&input_stream.lines, line_index);
+    String_Length i = position - 1;
+    for (; i > 0; i--) {
+        if (isspace(string->data[position])) {
+            if (!isspace(string->data[i])) {
+                break;
+            }
+        } else if (!isalnum(string->data[i])) {
+            break;
+        }
+    }
+    return i;
+}
+
 struct String get_line_from_input(void) {
     const struct String command = create_string("> ");
     print_string(command);
@@ -95,9 +132,9 @@ struct String get_line_from_input(void) {
         const char c = (char)getchar();
         // If is an ANSI escape code
         if (c == '\033') {
-            getchar();  // Skip the [
-            const String_Length length = get_node_from_index(&input_stream.lines, line_index)->length;
-            switch (getchar()) {
+            if (getchar() == '[') {  // Skip the [
+                const String_Length length = get_node_from_index(&input_stream.lines, line_index)->length;
+                switch (getchar()) {
                 case 'A':  // Arrow up
                 {
                     String_Node_Index previous_index;
@@ -167,6 +204,23 @@ struct String get_line_from_input(void) {
                     printf("\033[%dG", (command.length + 1));
                     position = 0;
                     break;
+                case '1': // Ctrl + key
+                    if ((getchar() == ';') && (getchar() == '5')) {
+                        switch (getchar()) {
+                        case 'C':  // Arrow right
+                            position = jump_words_right(line_index, position);
+                            // Update the cursor position
+                            printf("\033[%dG", (int)(position + command.length + 1));
+                            break;
+                        case 'D':  // Arrow left
+                            position = jump_words_left(line_index, position);
+                            // Update the cursor position
+                            printf("\033[%dG", (int)(position + command.length + 1));
+                            break;
+                        }
+                    }
+                    break;
+                }
             }
         } else {
             if (line_index != input_stream.lines.current_index) {
@@ -183,84 +237,84 @@ struct String get_line_from_input(void) {
             struct String_Node *const node = get_current_node(&input_stream.lines);
             const String_Length length = node->length;
             switch (c) {
-                case '\n':
-                case '\r':
-                    putchar('\n');
-                    struct String str = get_string_from_node(node);
-                    if (!string_is_empty(&str)) {
-                        update_current_string(&input_stream.lines);
-                    }
-                    return str;
-                    break;
-                case 127:  // Backspace
-                case '\b':
-                    if (position > 0) {
-                        position--;
-                        remove_char_at(&input_stream.lines, position);
-                        // Go left one position with the cursor
-                        printf("\033[D");
-                        // Update line to the output
-                        print_chars_at_index(&input_stream.lines, line_index, position);
-                        // Override the last printed char with a space
-                        putchar(' ');
-                        // Restores cursor position
-                        printf("\033[%dG", (int)(position + command.length + 1));
-                    }
-                    break;
-                case '~':  // Delete
-                    if (position < length) {
-                        remove_char_at(&input_stream.lines, position);
-                        // Update line to the output
-                        print_chars_at_index(&input_stream.lines, line_index, position);
-                        // Override the last printed char with a space
-                        putchar(' ');
-                        // Restores cursor position
-                        printf("\033[%dG", (int)(position + command.length + 1));
-                    }
-                    break;
-                case '\t':  // Horizontal Tab
-                {
-                    // We convert tab to four spaces, because it is easiear to handle
-                    unsigned int tab_to_spaces = 4;
-                    printf("%*s", tab_to_spaces, "");
-                    if (position < length) {
-                        // Update line to the output
-                        print_chars_at_index(&input_stream.lines, line_index, position);
-                        // Restores cursor position
-                        printf("\033[%dG", (int)(position + command.length + tab_to_spaces + 1));
-                    }
-                    while (tab_to_spaces--) {
-                        if (add_char_at(&input_stream.lines, ' ', position)) {
-                            putchar('\n');
-                            print_error("You typed a expression that consumed all the input buffer! You may try again...\n\n");
-                            print_string(command);
-                            position = 0;
-                        } else {
-                            position++;
-                        }
-                    }
-                    // The current line address may have changed when merging lines
-                    line_index = input_stream.lines.current_index;
-                } break;
-                default:
-                    putchar(c);  // Echo character
-                    if (position < length) {
-                        // Update line to the output
-                        print_chars_at_index(&input_stream.lines, line_index, position);
-                        // Restores cursor position
-                        printf("\033[%dG", (int)(position + command.length + 2));
-                    }
-                    if (add_char_at(&input_stream.lines, c, position)) {
+            case '\n':
+            case '\r':
+                putchar('\n');
+                struct String str = get_string_from_node(node);
+                if (!string_is_empty(&str)) {
+                    update_current_string(&input_stream.lines);
+                }
+                return str;
+                break;
+            case 127:  // Backspace
+            case '\b':
+                if (position > 0) {
+                    position--;
+                    remove_char_at(&input_stream.lines, position);
+                    // Go left one position with the cursor
+                    printf("\033[D");
+                    // Update line to the output
+                    print_chars_at_index(&input_stream.lines, line_index, position);
+                    // Override the last printed char with a space
+                    putchar(' ');
+                    // Restores cursor position
+                    printf("\033[%dG", (int)(position + command.length + 1));
+                }
+                break;
+            case '~':  // Delete
+                if (position < length) {
+                    remove_char_at(&input_stream.lines, position);
+                    // Update line to the output
+                    print_chars_at_index(&input_stream.lines, line_index, position);
+                    // Override the last printed char with a space
+                    putchar(' ');
+                    // Restores cursor position
+                    printf("\033[%dG", (int)(position + command.length + 1));
+                }
+                break;
+            case '\t':  // Horizontal Tab
+            {
+                // We convert tab to four spaces, because it is easiear to handle
+                unsigned int tab_to_spaces = 4;
+                printf("%*s", tab_to_spaces, "");
+                if (position < length) {
+                    // Update line to the output
+                    print_chars_at_index(&input_stream.lines, line_index, position);
+                    // Restores cursor position
+                    printf("\033[%dG", (int)(position + command.length + tab_to_spaces + 1));
+                }
+                while (tab_to_spaces--) {
+                    if (add_char_at(&input_stream.lines, ' ', position)) {
                         putchar('\n');
                         print_error("You typed a expression that consumed all the input buffer! You may try again...\n\n");
                         print_string(command);
-                        line_index = input_stream.lines.current_index;
                         position = 0;
                     } else {
-                        // The current line address may have changed when merging lines
-                        line_index = input_stream.lines.current_index;
                         position++;
                     }
+                }
+                // The current line address may have changed when merging lines
+                line_index = input_stream.lines.current_index;
+            } break;
+            default:
+                putchar(c);  // Echo character
+                if (position < length) {
+                    // Update line to the output
+                    print_chars_at_index(&input_stream.lines, line_index, position);
+                    // Restores cursor position
+                    printf("\033[%dG", (int)(position + command.length + 2));
+                }
+                if (add_char_at(&input_stream.lines, c, position)) {
+                    putchar('\n');
+                    print_error("You typed a expression that consumed all the input buffer! You may try again...\n\n");
+                    print_string(command);
+                    line_index = input_stream.lines.current_index;
+                    position = 0;
+                } else {
+                    // The current line address may have changed when merging lines
+                    line_index = input_stream.lines.current_index;
+                    position++;
+                }
             }
         }
     }
