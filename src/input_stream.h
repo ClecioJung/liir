@@ -29,13 +29,9 @@
 
 #include "data-structures/string_buffer.h"
 
-struct Input_Stream {
-    struct String_Buffer lines;
-};
-
-struct Input_Stream create_input_stream(void);
-struct String get_line_from_input(struct Input_Stream *const input_stream);
-void print_previous_lines(struct Input_Stream *const input_stream);
+void initialize_input_stream(void);
+struct String get_line_from_input(void);
+void print_previous_lines(void);
 
 #endif  // __INPUT_STREAM
 

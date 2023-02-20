@@ -33,6 +33,7 @@
 #include "data-structures/sized_string.h"
 #include "printing.h"
 #include "variables.h"
+#include "input_stream.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -41,26 +42,11 @@
 #define M_E 2.7182818284590452354
 #endif
 
-// This function has it's limitations. For instance, the user cannot use the keys
-// delete, backspace or arrows. But it simply works.
-static void get_file_name(char *const file_name, int file_name_size) {
-    int i = 0;
-    char c = (char)getchar();
-    while (c != '\n' && i < file_name_size) {
-        putchar(c);
-        file_name[i++] = c;
-        c = (char)getchar();
-    }
-    putchar('\n');
-    file_name[i] = '\0';
-}
-
 double fn_load(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)first_arg;
     (void)second_arg;
-    printf("What is the name of the file from which the variables should be loaded?\n");
-    char file_name[260];
-    get_file_name(file_name, sizeof(file_name));
+    printf("Please insert the name of the file from which the variables should be loaded?\n");
+    const struct String file_name = get_line_from_input();
     load_variables_from_file(vars, file_name);
     return NAN;
 }
@@ -68,9 +54,8 @@ double fn_load(struct Variables *const vars, const struct Fn_Arg first_arg, cons
 double fn_save(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)first_arg;
     (void)second_arg;
-    printf("What is the name of the file in which the variables should be saved?\n");
-    char file_name[260];
-    get_file_name(file_name, sizeof(file_name));
+    printf("Please insert the name of the file in which the variables should be saved?\n");
+    const struct String file_name = get_line_from_input();
     save_variables_to_file(vars, file_name);
     return NAN;
 }

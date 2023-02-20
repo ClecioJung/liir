@@ -251,17 +251,22 @@ void remove_whitespaces(char **str) {
     end[1] = '\0';
 }
 
-void load_variables_from_file(struct Variables *const vars, const char *const file_name) {
+void load_variables_from_file(struct Variables *const vars, const struct String file_name) {
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
-    // Most systems do not allow for a line greather than 4 kbytes
-    char line[4096];
-    FILE *const file = fopen(file_name, "rb");
+    // Convert the file name to a C-string
+    char file_name_str[file_name.length + 1];
+    strncpy(file_name_str, file_name.data, file_name.length);
+    file_name_str[file_name.length] = '\0';
+    FILE *const file = fopen(file_name_str, "rb");
 	if (file == NULL) {
-        print_error("Couldn't read the variables from the file \"%s\", because of the following error: %s\n", file_name, strerror(errno));
+        print_error("Couldn't read the variables from the file \"%.*s\", because of the following error: %s\n",
+            file_name.length, file_name.data, strerror(errno));
         return;
     }
+    // Most systems do not allow for a line greather than 4 kbytes
+    char line[4096];
     while (fgets(line, sizeof(line), file) != NULL) {
         char *key = strtok(line, "=\n");
         if (key == NULL) {
@@ -294,16 +299,21 @@ void load_variables_from_file(struct Variables *const vars, const char *const fi
     fclose(file);
 }
 
-void save_variables_to_file(struct Variables *const vars, const char *const file_name) {
+void save_variables_to_file(struct Variables *const vars, const struct String file_name) {
     if (vars == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     if (vars->list.size == 0) {
         return;
     }
-    FILE *const file = fopen(file_name, "wb");
+    // Convert the file name to a C-string
+    char file_name_str[file_name.length + 1];
+    strncpy(file_name_str, file_name.data, file_name.length);
+    file_name_str[file_name.length] = '\0';
+    FILE *const file = fopen(file_name_str, "wb");
 	if (file == NULL) {
-        print_error("Couldn't save the variables to the file \"%s\", because of the following error: %s\n", file_name, strerror(errno));
+        print_error("Couldn't save the variables to the file \"%.*s\", because of the following error: %s\n",
+            file_name.length, file_name.data, strerror(errno));
         return;
     }
     for (int64_t i = 0; i < (int64_t)vars->list.size; i++) {

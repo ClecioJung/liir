@@ -56,8 +56,8 @@ bool variable_list_is_empty(struct Variables *const vars);
 // The functions bellow can load and save the variables to file.
 // The data is saved in the file using the structure "key = value" in each line.
 // The key must be a valid variable name and the value must be a number.
-void load_variables_from_file(struct Variables *const vars, const char *const file_name);
-void save_variables_to_file(struct Variables *const vars, const char *const file_name);
+void load_variables_from_file(struct Variables *const vars, const struct String file_name);
+void save_variables_to_file(struct Variables *const vars, const struct String file_name);
 
 #endif  // __VARIABLES
 

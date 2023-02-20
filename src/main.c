@@ -224,12 +224,13 @@ int main(const int argc, const char *const argv[]) {
     if ((actions & ACTION_EXIT) != 0) {
         return EXIT_SUCCESS;
     }
+    initialize_input_stream();
     struct Lexer lexer = create_lex(64);
     struct Variables vars = create_variables(64);
     struct Parser parser = create_parser(&lexer, &vars, 1024);
     if (file_name_to_load != NULL) {
         printf("Attempting to load variables from file \"%s\"\n", file_name_to_load);
-        load_variables_from_file(&vars, file_name_to_load);
+        load_variables_from_file(&vars, create_string((char *)file_name_to_load));
         putchar('\n');
     }
     if (command_line_expression.length > 0) {
@@ -237,12 +238,11 @@ int main(const int argc, const char *const argv[]) {
         printf("> %.*s\n", command_line_expression.length, command_line_expression.data);
         interpret(&parser, command_line_expression);
     } else {
-        struct Input_Stream input_stream = create_input_stream();
         while ((actions & ACTION_EXIT) == 0) {
-            const struct String line = get_line_from_input(&input_stream);
+            const struct String line = get_line_from_input();
             interpret(&parser, line);
             if (actions & ACTION_PRINT_LINES) {
-                print_previous_lines(&input_stream);
+                print_previous_lines();
             }
         }
     }

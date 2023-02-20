@@ -39,29 +39,30 @@
 #include "data-structures/string_buffer.h"
 #include "printing.h"
 
-struct Terminal_Config {
+struct Input_Stream {
     struct termios old_termios;
-    bool is_configured;
+    bool terminal_is_configured;
+    struct String_Buffer lines;
 };
 
-static struct Terminal_Config terminal_config = {0};
+static struct Input_Stream input_stream = {0};
 
 static void restore_terminal(void) {
-    if (terminal_config.is_configured) {
-        tcsetattr(STDIN_FILENO, TCSANOW, &terminal_config.old_termios);
+    if (input_stream.terminal_is_configured) {
+        tcsetattr(STDIN_FILENO, TCSANOW, &input_stream.old_termios);
     }
 }
 
 static void configure_terminal(void) {
-    if (!terminal_config.is_configured) {
+    if (!input_stream.terminal_is_configured) {
         if (!isatty(STDIN_FILENO)) {
             print_crash_and_exit("The standard input must be a terminal!\n");
         }
-        if (tcgetattr(STDIN_FILENO, &terminal_config.old_termios) != EXIT_SUCCESS) {
+        if (tcgetattr(STDIN_FILENO, &input_stream.old_termios) != EXIT_SUCCESS) {
             print_crash_and_exit("When configuring the terminal, the function \"tcgetattr()\" failed with error: %s\n", strerror(errno));
         }
-        terminal_config.is_configured = true;
-        struct termios new_terminal = terminal_config.old_termios;
+        input_stream.terminal_is_configured = true;
+        struct termios new_terminal = input_stream.old_termios;
         new_terminal.c_lflag &= (tcflag_t) ~ICANON;  // Disable canonical mode
         new_terminal.c_lflag &= (tcflag_t) ~ECHO;    // Disable echo
         if (tcsetattr(STDIN_FILENO, TCSANOW, &new_terminal) != EXIT_SUCCESS) {
@@ -74,17 +75,12 @@ static void configure_terminal(void) {
     }
 }
 
-struct Input_Stream create_input_stream(void) {
+void initialize_input_stream(void) {
     configure_terminal();
-    return (struct Input_Stream){
-        .lines = create_string_buffer(),
-    };
+    input_stream.lines = create_string_buffer();
 }
 
-struct String get_line_from_input(struct Input_Stream *const input_stream) {
-    if (input_stream == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
+struct String get_line_from_input(void) {
     const struct String command = create_string("> ");
     print_string(command);
     // Local variable used to store the current position of the cursor
@@ -94,19 +90,19 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
     // and also an extra index
     bool previous_direction = true;
     String_Node_Index auxiliar_index = INVALID_STRING_INDEX;
-    String_Node_Index line_index = input_stream->lines.current_index;
+    String_Node_Index line_index = input_stream.lines.current_index;
     for (;;) {
         const char c = (char)getchar();
         // If is an ANSI escape code
         if (c == '\033') {
             getchar();  // Skip the [
-            const String_Length length = get_node_from_index(&input_stream->lines, line_index)->length;
+            const String_Length length = get_node_from_index(&input_stream.lines, line_index)->length;
             switch (getchar()) {
                 case 'A':  // Arrow up
                 {
                     String_Node_Index previous_index;
                     if (previous_direction) {
-                        previous_index = get_previous_node(&input_stream->lines, line_index, auxiliar_index);
+                        previous_index = get_previous_node(&input_stream.lines, line_index, auxiliar_index);
                     } else {
                         previous_index = auxiliar_index;
                         previous_direction = true;
@@ -115,11 +111,11 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                     if (previous_index >= 0) {
                         auxiliar_index = line_index;
                         line_index = previous_index;
-                        position = get_node_from_index(&input_stream->lines, line_index)->length;
+                        position = get_node_from_index(&input_stream.lines, line_index)->length;
                         const int spaces = length - position;
                         // Print the line found
                         printf("\033[%dG", (command.length + 1));
-                        print_string_at_index(&input_stream->lines, line_index);
+                        print_string_at_index(&input_stream.lines, line_index);
                         // Completes the line with spaces
                         printf("%*s", (spaces > 0 ? spaces : 0), "");
                         // Restores cursor position
@@ -130,21 +126,21 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                 {
                     String_Node_Index next_index;
                     if (!previous_direction) {
-                        next_index = get_next_node(&input_stream->lines, line_index, auxiliar_index);
+                        next_index = get_next_node(&input_stream.lines, line_index, auxiliar_index);
                     } else {
                         next_index = auxiliar_index;
                         previous_direction = false;
                     }
                     // If there is a next non-empty line
-                    // const String_Node_Index next_index = get_next_node(&input_stream->lines, line_index, auxiliar_index);
+                    // const String_Node_Index next_index = get_next_node(&input_stream.lines, line_index, auxiliar_index);
                     if (next_index >= 0) {
                         auxiliar_index = line_index;
                         line_index = next_index;
-                        position = get_node_from_index(&input_stream->lines, line_index)->length;
+                        position = get_node_from_index(&input_stream.lines, line_index)->length;
                         const int spaces = length - position;
                         // Print the line found
                         printf("\033[%dG", (command.length + 1));
-                        print_string_at_index(&input_stream->lines, line_index);
+                        print_string_at_index(&input_stream.lines, line_index);
                         // Completes the line with spaces
                         printf("%*s", (spaces > 0 ? spaces : 0), "");
                         // Restores cursor position
@@ -173,18 +169,18 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                     break;
             }
         } else {
-            if (line_index != input_stream->lines.current_index) {
+            if (line_index != input_stream.lines.current_index) {
                 // The user changed the line been displayed using the arrows
                 // In this case, we must copy the line shown to the current line buffer
                 // This way we don't lose the command history
-                copy_string_at_index(&input_stream->lines, line_index);
+                copy_string_at_index(&input_stream.lines, line_index);
                 // The current line address may have changed when merging lines
-                line_index = input_stream->lines.current_index;
+                line_index = input_stream.lines.current_index;
                 // Reset auxiliar variables used to iterate over the linked list of strings
                 previous_direction = true;
                 auxiliar_index = INVALID_STRING_INDEX;
             }
-            struct String_Node *const node = get_current_node(&input_stream->lines);
+            struct String_Node *const node = get_current_node(&input_stream.lines);
             const String_Length length = node->length;
             switch (c) {
                 case '\n':
@@ -192,7 +188,7 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                     putchar('\n');
                     struct String str = get_string_from_node(node);
                     if (!string_is_empty(&str)) {
-                        update_current_string(&input_stream->lines);
+                        update_current_string(&input_stream.lines);
                     }
                     return str;
                     break;
@@ -200,11 +196,11 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                 case '\b':
                     if (position > 0) {
                         position--;
-                        remove_char_at(&input_stream->lines, position);
+                        remove_char_at(&input_stream.lines, position);
                         // Go left one position with the cursor
                         printf("\033[D");
                         // Update line to the output
-                        print_chars_at_index(&input_stream->lines, line_index, position);
+                        print_chars_at_index(&input_stream.lines, line_index, position);
                         // Override the last printed char with a space
                         putchar(' ');
                         // Restores cursor position
@@ -213,9 +209,9 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                     break;
                 case '~':  // Delete
                     if (position < length) {
-                        remove_char_at(&input_stream->lines, position);
+                        remove_char_at(&input_stream.lines, position);
                         // Update line to the output
-                        print_chars_at_index(&input_stream->lines, line_index, position);
+                        print_chars_at_index(&input_stream.lines, line_index, position);
                         // Override the last printed char with a space
                         putchar(' ');
                         // Restores cursor position
@@ -229,12 +225,12 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                     printf("%*s", tab_to_spaces, "");
                     if (position < length) {
                         // Update line to the output
-                        print_chars_at_index(&input_stream->lines, line_index, position);
+                        print_chars_at_index(&input_stream.lines, line_index, position);
                         // Restores cursor position
                         printf("\033[%dG", (int)(position + command.length + tab_to_spaces + 1));
                     }
                     while (tab_to_spaces--) {
-                        if (add_char_at(&input_stream->lines, ' ', position)) {
+                        if (add_char_at(&input_stream.lines, ' ', position)) {
                             putchar('\n');
                             print_error("You typed a expression that consumed all the input buffer! You may try again...\n\n");
                             print_string(command);
@@ -244,25 +240,25 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
                         }
                     }
                     // The current line address may have changed when merging lines
-                    line_index = input_stream->lines.current_index;
+                    line_index = input_stream.lines.current_index;
                 } break;
                 default:
                     putchar(c);  // Echo character
                     if (position < length) {
                         // Update line to the output
-                        print_chars_at_index(&input_stream->lines, line_index, position);
+                        print_chars_at_index(&input_stream.lines, line_index, position);
                         // Restores cursor position
                         printf("\033[%dG", (int)(position + command.length + 2));
                     }
-                    if (add_char_at(&input_stream->lines, c, position)) {
+                    if (add_char_at(&input_stream.lines, c, position)) {
                         putchar('\n');
                         print_error("You typed a expression that consumed all the input buffer! You may try again...\n\n");
                         print_string(command);
-                        line_index = input_stream->lines.current_index;
+                        line_index = input_stream.lines.current_index;
                         position = 0;
                     } else {
                         // The current line address may have changed when merging lines
-                        line_index = input_stream->lines.current_index;
+                        line_index = input_stream.lines.current_index;
                         position++;
                     }
             }
@@ -270,12 +266,9 @@ struct String get_line_from_input(struct Input_Stream *const input_stream) {
     }
 }
 
-void print_previous_lines(struct Input_Stream *const input_stream) {
-    if (input_stream == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
+void print_previous_lines(void) {
     printf("Previous typed lines:\n");
-    print_string_buffer(&input_stream->lines);
+    print_string_buffer(&input_stream.lines);
     printf("\n");
 }
 
