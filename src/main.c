@@ -24,7 +24,6 @@
 // SOURCE
 //------------------------------------------------------------------------------
 
-#define _GNU_SOURCE
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -64,6 +63,7 @@ static void set_print_variables(const char *const parameter);
 static void set_print_functions(const char *const parameter);
 static void set_print_lines(const char *const parameter);
 static void set_expression_to_evaluate(const char *const parameter);
+static void set_file_name_to_load(const char *const parameter);
 
 static const struct Arg_Cmd arg_list[] = {
     {"--help", arguments_usage, false, "Display this help message."},
@@ -73,11 +73,13 @@ static const struct Arg_Cmd arg_list[] = {
     {"--function", set_print_functions, false, "Display the built-in functions."},
     {"--input", set_print_lines, false, "Display the previous typed lines at each step."},
     {"--expr", set_expression_to_evaluate, true, "Evaluate a single expression passed by command line."},
+    {"--load", set_file_name_to_load, true, "Load the variables from the specified file."},
 };
 static const int arg_num = (sizeof(arg_list) / sizeof(arg_list[0]));
 static const char *software = NULL;
 static enum Actions actions = 0;
 static struct String command_line_expression = {0};
+static const char *file_name_to_load = NULL;
 
 unsigned int max_uint(const unsigned int a, const unsigned int b) {
     return ((a > b) ? a : b);
@@ -131,6 +133,12 @@ static void set_expression_to_evaluate(const char *const parameter) {
             .data = (char *)parameter,
             .length = (String_Length)strlen(parameter),
         };
+    }
+}
+
+static void set_file_name_to_load(const char *const parameter) {
+    if (parameter != NULL) {
+        file_name_to_load = parameter;
     }
 }
 
@@ -219,6 +227,11 @@ int main(const int argc, const char *const argv[]) {
     struct Lexer lexer = create_lex(64);
     struct Variables vars = create_variables(64);
     struct Parser parser = create_parser(&lexer, &vars, 1024);
+    if (file_name_to_load != NULL) {
+        printf("Attempting to load variables from file \"%s\"\n", file_name_to_load);
+        load_variables_from_file(&vars, file_name_to_load);
+        putchar('\n');
+    }
     if (command_line_expression.length > 0) {
         // If an expression was passed through the command line, then evaluate it and exit
         printf("> %.*s\n", command_line_expression.length, command_line_expression.data);

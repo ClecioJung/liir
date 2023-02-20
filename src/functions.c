@@ -41,6 +41,40 @@
 #define M_E 2.7182818284590452354
 #endif
 
+// This function has it's limitations. For instance, the user cannot use the keys
+// delete, backspace or arrows. But it simply works.
+static void get_file_name(char *const file_name, int file_name_size) {
+    int i = 0;
+    char c = (char)getchar();
+    while (c != '\n' && i < file_name_size) {
+        putchar(c);
+        file_name[i++] = c;
+        c = (char)getchar();
+    }
+    putchar('\n');
+    file_name[i] = '\0';
+}
+
+double fn_load(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)first_arg;
+    (void)second_arg;
+    printf("What is the name of the file from which the variables should be loaded?\n");
+    char file_name[260];
+    get_file_name(file_name, sizeof(file_name));
+    load_variables_from_file(vars, file_name);
+    return NAN;
+}
+
+double fn_save(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)first_arg;
+    (void)second_arg;
+    printf("What is the name of the file in which the variables should be saved?\n");
+    char file_name[260];
+    get_file_name(file_name, sizeof(file_name));
+    save_variables_to_file(vars, file_name);
+    return NAN;
+}
+
 double fn_clear(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)first_arg;
     (void)second_arg;
@@ -91,13 +125,6 @@ double fn_pi(struct Variables *const vars, const struct Fn_Arg first_arg, const 
     (void)first_arg;
     (void)second_arg;
     return M_PI;
-}
-
-double fn_nan(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
-    (void)vars;
-    (void)first_arg;
-    (void)second_arg;
-    return nan("");
 }
 
 double fn_ceil(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
@@ -285,6 +312,20 @@ const struct Function functions[] = {
         .fn = &fn_exit,
     },
     {
+        .name = "load",
+        .description = "Load variables from a file",
+        .arity = 0,
+        .return_value = false,
+        .fn = &fn_load,
+    },
+    {
+        .name = "save",
+        .description = "Save variables to a file",
+        .arity = 0,
+        .return_value = false,
+        .fn = &fn_save,
+    },
+    {
         .name = "clear",
         .description = "Clear all variables from memory",
         .arity = 0,
@@ -325,13 +366,6 @@ const struct Function functions[] = {
         .arity = 0,
         .return_value = true,
         .fn = &fn_pi,
-    },
-    {
-        .name = "nan",
-        .description = "Returns a quiet NaN (Not-A-Number) value",
-        .arity = 0,
-        .return_value = true,
-        .fn = &fn_nan,
     },
     {
         .name = "ceil",

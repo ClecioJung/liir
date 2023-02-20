@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <ctype.h>
 
 #include "data-structures/sized_string.h"
 #include "printing.h"
@@ -207,6 +209,96 @@ void print_variables(struct Variables *const vars) {
 
 bool variable_list_is_empty(struct Variables *const vars) {
     return (vars->list.size == 0);
+}
+
+// This function was developed during some testing, but is currently unused
+// I leave it here because it may be useful in the future
+// Remember to free the memory allocated for the returned string
+char *get_content_from_file(const char *const file_name) {
+	char *buffer = NULL;
+	FILE *const file = fopen(file_name, "rb");
+	if (file != NULL) {
+        // Get file size
+        fseek(file, 0, SEEK_END);
+        const size_t file_size = (size_t)ftell(file);
+        fseek(file, 0, SEEK_SET);
+		// Allocate memory to store the entire file
+		buffer = (char *)malloc((file_size + 1)*sizeof(char));
+		if (buffer != NULL) {
+			// Copy the contents of the file to the buffer
+			const size_t result = fread(buffer, sizeof(char), file_size, file);
+			buffer[file_size] = '\0';
+			if (result != file_size) {
+				// Reading file error, free dinamically allocated memory
+				free((void *)buffer);
+				buffer = NULL;
+			}
+		}
+		fclose(file);
+	}
+	return buffer;
+}
+
+// Remove leading and trailing whitespace from a string
+void remove_whitespaces(char **str) {
+    while (isspace((unsigned char) **str)) {
+        (*str)++;
+    }
+    char *end = *str + strlen(*str) - 1;
+    while (end > *str && isspace((unsigned char) *end)) {
+        end--;
+    }
+    end[1] = '\0';
+}
+
+void load_variables_from_file(struct Variables *const vars, const char *const file_name) {
+    if (vars == NULL) {
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
+    }
+    char line[4096];
+    FILE *const file = fopen(file_name, "rb");
+	if (file == NULL) {
+        print_error("Couldn't read the variables from the file \"%s\", because of the following error: %s\n", file_name, strerror(errno));
+        return;
+    }
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char *key = strtok(line, "=\n");
+        if (key == NULL) {
+            continue;
+        }
+        remove_whitespaces(&key);
+        if (*key == '\0') {
+            continue;
+        }
+        char *value = strtok(NULL, "=\n");
+        if (value == NULL) {
+            continue;
+        }
+        remove_whitespaces(&value);
+        double number = parse_number(create_string(value), NULL);
+        assign_variable(vars, create_string(key), number);
+        printf("%s = %s\n", key, value);
+    }
+    fclose(file);
+}
+
+void save_variables_to_file(struct Variables *const vars, const char *const file_name) {
+    if (vars == NULL) {
+        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
+    }
+    if (vars->list.size == 0) {
+        return;
+    }
+    FILE *const file = fopen(file_name, "wb");
+	if (file == NULL) {
+        print_error("Couldn't save the variables to the file \"%s\", because of the following error: %s\n", file_name, strerror(errno));
+        return;
+    }
+    for (int64_t i = 0; i < (int64_t)vars->list.size; i++) {
+        struct Variable var = *variable(vars, i);
+        fprintf(file, "%.*s = %f\n", var.name.length, var.name.data, var.value);
+    }
+    fclose(file);
 }
 
 //------------------------------------------------------------------------------
