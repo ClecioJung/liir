@@ -7,7 +7,9 @@ This project posseses the following characteristics:
 
 - Developed with C11;
 - This code was tested only on Linux (compiled with GNU GCC);
-- This code uses a custom meomry allocator based on (slab allocation)[https://en.wikipedia.org/wiki/Slab_allocation];
+- This code uses a custom memory allocator based on [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation);
+- It can save and load variables from a file;
+- It can export the abstract syntax tree generated from expressions to a [graphviz](https://graphviz.org/) representation;
 - All the operations are performed with `double` precision floating point numbers (64 bits);
 
 ## Usage

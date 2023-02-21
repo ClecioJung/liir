@@ -59,6 +59,9 @@ void destroy_parser(struct Parser *const parser);
 int64_t parse(struct Parser *const parser);
 double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status);
 void print_tree(struct Parser *const parser, const int64_t head_idx);
+// Outputs to stdout a graph representation of the abstract syntax tree (AST) generated
+// It can be copied to graphviz to generate a visual graph representation
+void print_graph(struct Parser *const parser, const int64_t head_idx);
 
 #endif  // __PARSER
 

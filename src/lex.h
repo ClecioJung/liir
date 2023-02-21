@@ -62,6 +62,7 @@ struct Lexer create_lex(const size_t initial_size);
 void destroy_lex(struct Lexer *const lexer);
 bool lex(struct Lexer *const lexer, const struct String line);
 char *get_token_type(const enum Tok_Types type);
+void print_token_string(const struct Token tok);
 void print_token(const struct Token tok);
 void print_tokens(struct Lexer *const lexer);
 

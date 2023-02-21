@@ -193,6 +193,29 @@ char *get_token_type(const enum Tok_Types type) {
     return NULL;
 }
 
+void print_token_string(const struct Token tok) {
+    switch (tok.type) {
+    case TOK_OPERATOR:
+        printf("%c", tok.op);
+        break;
+    case TOK_UNARY_OPERATOR:
+        printf("%c", tok.op);
+        break;
+    case TOK_DELIMITER:
+        printf("%c", tok.op);
+        break;
+    case TOK_NUMBER:
+        printf("%g", tok.number);
+        break;
+    case TOK_NAME:
+        printf("%.*s", tok.name.length, tok.name.data);
+        break;
+    case TOK_FUNCTION:
+        printf("%s", functions[tok.function_index].name);
+        break;
+    }
+}
+
 void print_token(const struct Token tok) {
     switch (tok.type) {
     case TOK_OPERATOR:
