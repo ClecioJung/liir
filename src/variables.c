@@ -294,7 +294,7 @@ void load_variables_from_file(struct Variables *const vars, const struct String 
             continue;
         }
         assign_variable(vars, string_key, number);
-        printf("%s = %s\n", key, value);
+        printf("%s = %g\n", key, number);
     }
     fclose(file);
 }
