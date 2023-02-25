@@ -17,7 +17,7 @@ SDIR = src
 # ----------------------------------------
 
 # Compiler, linker and debugger
-CC = gcc
+#CC = gcc
 DEBUGGER = gdb
 
 # Libraries
@@ -35,6 +35,11 @@ DEBUG_FLAGS = -O0 -g -DDEBUG
 # Git version
 # Based on: https://stackoverflow.com/questions/1704907/how-can-i-get-my-c-code-to-automatically-print-out-its-git-version-hash
 GIT_VERSION = "$(shell git describe --always --dirty --tags)"
+
+# Create a directory
+ifndef MKDIR_P
+	MKDIR_P = mkdir -p
+endif
 
 # Recursive wildcard
 # Based on: https://stackoverflow.com/questions/2483182/recursive-wildcards-in-gnu-make
@@ -74,7 +79,7 @@ REL_CFLAGS = $(COMMON_FLAGS) $(RELEASE_FLAGS)
 DEB_CFLAGS = $(COMMON_FLAGS) $(DEBUG_FLAGS)
 
 # ----------------------------------------
-# Fomating macros
+# Formating macros
 # ----------------------------------------
 
 BOLD = \033[1m
@@ -138,7 +143,7 @@ $(DEBUG_DEPS): ;
 
 $(RELEASE_ODIRS) $(DEBUG_ODIRS) $(RELEASE_DDIRS) $(DEBUG_DDIRS):
 	@ echo "${GREEN}Creating directory ${BOLD}$@${NORMAL}"
-	mkdir -p $@
+	$(MKDIR_P) $@
 
 run: release
 	@ echo "${GREEN}Running the aplication:${NORMAL}"
@@ -156,7 +161,7 @@ log:
 	git log --oneline --decorate --all --graph
 
 clean:
-	rm -fr $(RELEASE_DIR)/ $(DEBUG_DIR)/ *.d *.o *.a *.so
+	$(RM) -r $(RELEASE_DIR)/ $(DEBUG_DIR)/ *.d *.o *.a *.so
 
 remade: clean release
 
