@@ -194,7 +194,7 @@ void print_variables(struct Variables *const vars) {
         return;
     }
     const char *const header = "Name";
-    const unsigned int max_length = max_uint(longest_variable_name(vars), strlen(header));
+    const unsigned int max_length = max_uint(longest_variable_name(vars), (unsigned int)strlen(header));
     printf("List of variables:\n");
     printf("%-*s Value \n", max_length, header);
     for (int64_t i = 0; i < (int64_t)vars->list.size; i++) {

@@ -26,3 +26,23 @@ jobs:
       env:
           CC: clang
           CXX: clang++
+
+  build-linux-gcc-debug:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: make
+      run: make debug
+      env:
+          CC: gcc
+          CXX: g++
+          
+  build-linux-clang-debug:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: make
+      run: make debug
+      env:
+          CC: clang
+          CXX: clang++

@@ -229,14 +229,14 @@ bool add_char_at(struct String_Buffer *const string_buffer, const char c, const 
                 advance_last_string(string_buffer);
                 if ((string_buffer->last_index <= 0) || (string_buffer->last_index == string_buffer->current_index)) {
                     // All the buffer must be allocated for the current string
-                    string_buffer->last_index = new_index;
-                    set_node_addresses(string_buffer, new_index, INVALID_STRING_INDEX, INVALID_STRING_INDEX);
+                    string_buffer->last_index = (String_Node_Index)new_index;
+                    set_node_addresses(string_buffer, string_buffer->last_index, INVALID_STRING_INDEX, INVALID_STRING_INDEX);
                     break;
                 }
             } while ((new_index + string_node_header_size + length + 1) >= string_buffer->last_index);
             // We have changed the position of the current line,
             // so we must copy the content to the new position
-            struct String_Node *const node = get_node_from_index(string_buffer, new_index);
+            struct String_Node *const node = get_node_from_index(string_buffer, (String_Node_Index)new_index);
             const struct String_Node *const node_to_copy = get_current_node(string_buffer);
             // During the copy of the strings, the content of node_to_copy->length may be overwritten,
             // because of this, we store a copy of its content in this constant
@@ -247,7 +247,7 @@ bool add_char_at(struct String_Buffer *const string_buffer, const char c, const 
             node->length = length;
             // Move new line to the beginning of the buffer
             if (string_buffer->last_index != string_buffer->current_index) {
-                move_current_string(string_buffer, new_index);
+                move_current_string(string_buffer, (String_Node_Index)new_index);
             }
         }
     }
