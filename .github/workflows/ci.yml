@@ -1,0 +1,28 @@
+name: C-Make CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-linux-gcc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: make
+      run: make
+      env:
+          CC: gcc
+          CXX: g++
+          
+  build-linux-clang:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: make
+      run: make
+      env:
+          CC: clang
+          CXX: clang++
