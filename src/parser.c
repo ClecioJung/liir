@@ -27,16 +27,17 @@
 #include "parser.h"
 
 #include <math.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "data-structures/allocator.h"
+#include "data-structures/dynamic_array.h"
 #include "data-structures/sized_string.h"
 #include "functions.h"
 #include "lex.h"
 #include "printing.h"
 #include "variables.h"
+
+#define INVALID_PARSER_INDEX ((size_t)-1)
 
 struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size) {
     if ((lexer == NULL) || (vars == NULL)) {
@@ -45,9 +46,9 @@ struct Parser create_parser(struct Lexer *const lexer, struct Variables *const v
     struct Parser parser = (struct Parser){
         .lexer = lexer,
         .vars = vars,
-        .nodes = allocator_construct(sizeof(struct Token_Node), initial_size),
+        .nodes = array_new(sizeof(struct Token_Node), initial_size),
     };
-    if (parser.nodes.data == NULL) {
+    if (parser.nodes == NULL) {
         print_crash_and_exit("Couldn't allocate memory for the parser!\n");
     }
     return parser;
@@ -55,24 +56,21 @@ struct Parser create_parser(struct Lexer *const lexer, struct Variables *const v
 
 void destroy_parser(struct Parser *const parser) {
     if (parser != NULL) {
-        allocator_delete(&parser->nodes);
+        array_del(parser->nodes);
     }
 }
 
-static int64_t new_node(struct Parser *const parser, const struct Token tok) {
-    int64_t index = allocator_new(&parser->nodes);
-    if (index < 0) {
-        print_crash_and_exit("Couldn't allocate more memory for the parser!\n");
-    }
-    struct Token_Node *const node = allocator_get(parser->nodes, index);
-    *node = (struct Token_Node){
+static size_t new_node(struct Parser *const parser, const struct Token tok) {
+    struct Token_Node new_node = (struct Token_Node){
         .tok = tok,
-        .left_idx = -1,
-        .right_idx = -1,
+        .left_idx = INVALID_PARSER_INDEX,
+        .right_idx = INVALID_PARSER_INDEX,
     };
-    return index;
+    array_push(parser->nodes, new_node);
+    return(array_size(parser->nodes) - 1);
 }
 
+/*
 static inline struct Token_Node *get_node_ptr(struct Parser *const parser, int64_t index) {
     return allocator_get(parser->nodes, index);
 }
@@ -96,19 +94,10 @@ static inline int64_t is_valid_idx(struct Parser *const parser, int64_t index) {
 static inline int64_t is_invalid_idx(struct Parser *const parser, int64_t index) {
     return allocator_is_invalid(parser->nodes, index);
 }
-
-static inline struct Token *get_lex_tok(struct Parser *const parser, int64_t index) {
-    return allocator_get(parser->lexer->tokens, index);
-}
+*/
 
 static int get_op_precedence(const char op) {
-    const char precedence[] = {
-        '^',
-        '/',
-        '*',
-        '-',
-        '+',
-    };
+    const char precedence[] = { '^', '/', '*', '-', '+', };
     const int num_ops = sizeof(precedence) / sizeof(precedence[0]);
     for (int index = 0; index < num_ops; index++) {
         if (op == precedence[index]) {
@@ -119,9 +108,9 @@ static int get_op_precedence(const char op) {
 }
 
 // This function returns true if found an error
-static inline bool check_parser_right_error(struct Parser *const parser, const int64_t previous_idx, const int64_t current_idx) {
-    struct Token previous_tok = get_tok(parser, previous_idx);
-    struct Token current_tok = get_tok(parser, current_idx);
+static inline bool check_parser_right_error(struct Parser *const parser, const size_t previous_idx, const size_t current_idx) {
+    struct Token previous_tok = parser->nodes[previous_idx].tok;
+    struct Token current_tok = parser->nodes[current_idx].tok;
     if ((previous_tok.type == TOK_NUMBER) || (previous_tok.type == TOK_NAME)) {
         if (current_tok.type == TOK_NUMBER) {
             print_column(current_tok.column);
@@ -158,60 +147,60 @@ static inline bool check_parser_right_error(struct Parser *const parser, const i
 }
 
 // This function returns true if found an error
-static bool insert_node_right(struct Parser *const parser, int64_t *const head_idx, const int64_t node_idx) {
-    if (*head_idx < 0) {
+static bool insert_node_right(struct Parser *const parser, size_t *const head_idx, const size_t node_idx) {
+    if (array_index_is_invalid(parser->nodes, *head_idx)) {
         *head_idx = node_idx;
     } else {
-        int64_t previous_idx = *head_idx;
-        while (is_valid_idx(parser, get_right_idx(parser, previous_idx))) {
-            previous_idx = get_right_idx(parser, previous_idx);
+        size_t previous_idx = *head_idx;
+        while (array_index_is_valid(parser->nodes, parser->nodes[previous_idx].right_idx)) {
+            previous_idx = parser->nodes[previous_idx].right_idx;
         }
         if (check_parser_right_error(parser, previous_idx, node_idx)) {
             return true;
         }
-        get_node_ptr(parser, previous_idx)->right_idx = node_idx;
+        parser->nodes[previous_idx].right_idx = node_idx;
     }
     return false;
 }
 
 // This function returns true if found an error
-static inline bool insert_new_op(struct Parser *const parser, int64_t *const head_idx, const int64_t node_idx, const int64_t max_idx) {
-    if (*head_idx < 0) {
+static inline bool insert_new_op(struct Parser *const parser, size_t *const head_idx, const size_t node_idx, const size_t max_idx) {
+    if (array_index_is_invalid(parser->nodes, *head_idx)) {
         *head_idx = node_idx;
     } else {
-        int64_t previous_idx = -1;
+        size_t previous_idx = INVALID_PARSER_INDEX;
         {  // Search for the correct place to insert the node
-            int64_t next_idx = *head_idx;
-            const int precedence = get_op_precedence(get_tok(parser, node_idx).op);
-            while (is_valid_idx(parser, next_idx) && (get_tok(parser, next_idx).type == TOK_OPERATOR)) {
-                if ((next_idx == max_idx) || (get_op_precedence(get_tok(parser, next_idx).op) <= precedence)) {
+            size_t next_idx = *head_idx;
+            const int precedence = get_op_precedence(parser->nodes[node_idx].tok.op);
+            while (array_index_is_valid(parser->nodes, next_idx) && (parser->nodes[next_idx].tok.type == TOK_OPERATOR)) {
+                if ((next_idx == max_idx) || (get_op_precedence(parser->nodes[next_idx].tok.op) <= precedence)) {
                     break;
                 }
                 previous_idx = next_idx;
-                next_idx = get_right_idx(parser, next_idx);
+                next_idx = parser->nodes[next_idx].right_idx;
             }
         }
         // Insert new node
-        if (is_invalid_idx(parser, previous_idx)) {
-            get_node_ptr(parser, node_idx)->left_idx = *head_idx;
+        if (array_index_is_invalid(parser->nodes, previous_idx)) {
+            parser->nodes[node_idx].left_idx = *head_idx;
             *head_idx = node_idx;
         } else {
-            get_node_ptr(parser, node_idx)->left_idx = get_right_idx(parser, previous_idx);
-            get_node_ptr(parser, previous_idx)->right_idx = node_idx;
+            parser->nodes[node_idx].left_idx = parser->nodes[previous_idx].right_idx;
+            parser->nodes[previous_idx].right_idx = node_idx;
         }
     }
     return false;
 }
 
 // Function declaration to allow its use in parse_function
-static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, int64_t *const head_idx);
+static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, size_t *const head_idx);
 
 // Functions may have none, one or two arguments. These are stored in the binary tree, with the
 // first argument at the left node and the second at the right
 // This function is an integrant part of parse_expression, but was factored out to clarify the code
 // This function returns true if found an error
-static inline bool parse_function(struct Parser *const parser, size_t *const tk_idx, int64_t *const head_idx, const struct Token function_token) {
-    const int64_t function_node_idx = new_node(parser, function_token);
+static inline bool parse_function(struct Parser *const parser, size_t *const tk_idx, size_t *const head_idx, const struct Token function_token) {
+    const size_t function_node_idx = new_node(parser, function_token);
     if (insert_node_right(parser, head_idx, function_node_idx)) {
         return true;
     }
@@ -222,40 +211,40 @@ static inline bool parse_function(struct Parser *const parser, size_t *const tk_
     // The lexer guarantees for us that the next token after a function
     // with more than one argument is a parentheses '('
     (*tk_idx)++;
-    const struct Token parentheses_token = *get_lex_tok(parser, (int64_t)*tk_idx);
+    const struct Token parentheses_token = parser->lexer->tokens[*tk_idx];
     (*tk_idx)++;
-    if (*tk_idx >= parser->lexer->tokens.size) {
+    if (*tk_idx >= array_size(parser->lexer->tokens)) {
         print_column(parentheses_token.column);
         print_error("Didn't found the closing parentheses for the function declaration!\n");
         return true;
     }
-    int64_t argument_idx = -1;
+    size_t argument_idx = INVALID_PARSER_INDEX;
     if (parse_expression(parser, tk_idx, &argument_idx)) {
         return true;
     }
-    if (argument_idx < 0) {
+    if (array_index_is_invalid(parser->nodes, argument_idx)) {
         print_column(function_token.column);
         print_error("It was impossible to parse the first argument to this function!\n");
         return true;
     }
     // Insert first argument in the left
-    get_node_ptr(parser, function_node_idx)->left_idx = argument_idx;
+    parser->nodes[function_node_idx].left_idx = argument_idx;
     if (functions[function_token.function_index].arity >= 2) {
         // The arguments must be separated by comma
-        const struct Token comma_token = *get_lex_tok(parser, (int64_t)*tk_idx);
+        const struct Token comma_token = parser->lexer->tokens[*tk_idx];
         if ((comma_token.type == TOK_DELIMITER) && (comma_token.op == ',')) {
             (*tk_idx)++;
-            if ((*tk_idx) < parser->lexer->tokens.size) {
+            if ((*tk_idx) < array_size(parser->lexer->tokens)) {
                 if (parse_expression(parser, tk_idx, &argument_idx)) {
                     return true;
                 }
-                if (argument_idx < 0) {
+                if (array_index_is_invalid(parser->nodes, argument_idx)) {
                     print_column(function_token.column);
                     print_error("It was impossible to parse the second argument to this function!\n");
                     return true;
                 }
                 // Insert second argument to the right
-                get_node_ptr(parser, function_node_idx)->right_idx = argument_idx;
+                parser->nodes[function_node_idx].right_idx = argument_idx;
             }
         } else {
             print_column(function_token.column);
@@ -263,12 +252,12 @@ static inline bool parse_function(struct Parser *const parser, size_t *const tk_
             return true;
         }
     }
-    if (*tk_idx >= parser->lexer->tokens.size) {
+    if (*tk_idx >= array_size(parser->lexer->tokens)) {
         print_column(parentheses_token.column);
         print_error("Didn't found the closing parentheses for the function declaration!\n");
         return true;
     }
-    const struct Token last_token = *get_lex_tok(parser, (int64_t)*tk_idx);
+    const struct Token last_token = parser->lexer->tokens[*tk_idx];
     if ((last_token.type != TOK_DELIMITER) || (last_token.op != ')')) {
         print_column(last_token.column);
         print_error("Expected a closing parentheses \")\"!\n");
@@ -278,16 +267,16 @@ static inline bool parse_function(struct Parser *const parser, size_t *const tk_
 }
 
 // This function returns true if found an error
-static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, int64_t *const head_idx) {
-    int64_t last_parentheses_idx = -1;
-    *head_idx = -1;
-    for (; *tk_idx < parser->lexer->tokens.size; (*tk_idx)++) {
-        const struct Token current_token = *get_lex_tok(parser, (int64_t)*tk_idx);
+static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, size_t *const head_idx) {
+    size_t last_parentheses_idx = INVALID_PARSER_INDEX;
+    *head_idx = INVALID_PARSER_INDEX;
+    for (; *tk_idx < array_size(parser->lexer->tokens); (*tk_idx)++) {
+        const struct Token current_token = parser->lexer->tokens[*tk_idx];
         if (current_token.type == TOK_DELIMITER) {
             switch (current_token.op) {
             case '(': {
                 (*tk_idx)++;
-                if (*tk_idx >= parser->lexer->tokens.size) {
+                if (*tk_idx >= array_size(parser->lexer->tokens)) {
                     print_column(current_token.column);
                     print_error("Mismatched delimiters! Not all parentheses were closed!\n");
                     return true;
@@ -295,19 +284,19 @@ static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, 
                 if (parse_expression(parser, tk_idx, &last_parentheses_idx)) {
                     return true;
                 }
-                if (*tk_idx >= parser->lexer->tokens.size) {
+                if (*tk_idx >= array_size(parser->lexer->tokens)) {
                     print_column(current_token.column);
                     print_error("Mismatched delimiters! Not all parentheses were closed!\n");
                     return true;
                 }
-                const struct Token last_token = *get_lex_tok(parser, (int64_t)*tk_idx);
+                const struct Token last_token = parser->lexer->tokens[*tk_idx];
                 if ((last_token.type != TOK_DELIMITER) || (last_token.op != ')')) {
                     print_column(last_token.column);
                     print_error("Expected a closing parentheses \")\"!\n");
                     return true;
                 }
                 // If last_parentheses_idx is negative, there is no new node to insert
-                if (last_parentheses_idx >= 0) {
+                if (array_index_is_valid(parser->nodes, last_parentheses_idx)) {
                     if (insert_node_right(parser, head_idx, last_parentheses_idx)) {
                         return true;
                     }
@@ -326,12 +315,12 @@ static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, 
                 return true;
             }
         } else if (current_token.type == TOK_OPERATOR) {
-            int64_t node_idx = new_node(parser, current_token);
+            size_t node_idx = new_node(parser, current_token);
             if (insert_new_op(parser, head_idx, node_idx, last_parentheses_idx)) {
                 return true;
             }
         } else {
-            int64_t node_idx = new_node(parser, current_token);
+            size_t node_idx = new_node(parser, current_token);
             if (insert_node_right(parser, head_idx, node_idx)) {
                 return true;
             }
@@ -340,66 +329,66 @@ static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, 
     return false;
 }
 
-int64_t parse(struct Parser *const parser) {
+size_t parse(struct Parser *const parser) {
     if (parser == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
-    if (parser->lexer->tokens.size == 0) {
-        return -1;
+    if (array_size(parser->lexer->tokens) == 0) {
+        return INVALID_PARSER_INDEX;
     }
-    allocator_free_all(&parser->nodes);
+    array_free_all(parser->nodes);
     size_t tk_idx = 0;
-    int64_t head_idx = -1;
-    if (parse_expression(parser, &tk_idx, &head_idx) || (head_idx < 0)) {
-        return -1;
+    size_t head_idx = INVALID_PARSER_INDEX;
+    if (parse_expression(parser, &tk_idx, &head_idx) || array_index_is_invalid(parser->nodes, head_idx)) {
+        return INVALID_PARSER_INDEX;
     }
     // Couldn't parse all the expression
-    if (tk_idx < parser->lexer->tokens.size) {
-        const struct Token next_token = *get_lex_tok(parser, (int64_t)tk_idx);
+    if (tk_idx < array_size(parser->lexer->tokens)) {
+        const struct Token next_token = parser->lexer->tokens[tk_idx];
         print_column(next_token.column);
         print_error("Unexpected %s at parsing phase!\n", get_token_type(next_token.type));
-        return -1;
+        return INVALID_PARSER_INDEX;
     }
     return head_idx;
 }
 
-static struct Fn_Arg build_fn_arg(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status) {
+static struct Fn_Arg build_fn_arg(struct Parser *const parser, const size_t node_idx, enum Evaluation_Status *const status) {
     struct Fn_Arg arg = (struct Fn_Arg){
         .value = evaluate(parser, node_idx, status),
         // If the function argument is a name (possible a variable), pass it to the function to be used as a reference
-        .name = (is_valid_idx(parser, node_idx) && (get_tok(parser, node_idx).type == TOK_NAME)) ?
-                get_tok(parser, node_idx).name : (struct String){0},
+        .name = (array_index_is_valid(parser->nodes, node_idx) && (parser->nodes[node_idx].tok.type == TOK_NAME)) ?
+                parser->nodes[node_idx].tok.name : (struct String){0},
     };
     return arg;
 }
 
-static inline double perform_function_call(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status) {
-    const struct Function function = functions[get_tok(parser, node_idx).function_index];
+static inline double perform_function_call(struct Parser *const parser, const size_t node_idx, enum Evaluation_Status *const status) {
+    const struct Function function = functions[parser->nodes[node_idx].tok.function_index];
     if (function.fn == NULL) {
-        print_column(get_tok(parser, node_idx).column);
+        print_column(parser->nodes[node_idx].tok.column);
         print_error("The function \"%s\" was not properly initialized!\n", function.name);
         *status = Eval_Error;
         return NAN;
     }
-    const int64_t left_idx = get_left_idx(parser, node_idx);
-    if ((function.arity >= 1) && is_invalid_idx(parser, left_idx)) {
-        print_column(get_tok(parser, node_idx).column);
+    const size_t left_idx = parser->nodes[node_idx].left_idx;
+    if ((function.arity >= 1) && array_index_is_invalid(parser->nodes, left_idx)) {
+        print_column(parser->nodes[node_idx].tok.column);
         print_warning("Did you forget to pass a argument to the function \"%s\"?\n", function.name);
     }
-    const int64_t right_idx = get_right_idx(parser, node_idx);
-    if ((function.arity >= 2) && is_invalid_idx(parser, right_idx)) {
-        print_column(get_tok(parser, node_idx).column);
+    const size_t right_idx = parser->nodes[node_idx].right_idx;
+    if ((function.arity >= 2) && array_index_is_invalid(parser->nodes, right_idx)) {
+        print_column(parser->nodes[node_idx].tok.column);
         print_warning("Did you forget to pass the second argument to the function \"%s\"?\n", function.name);
     }
     if ((!function.return_value) && (*status != Eval_Error)) {
         *status = Eval_Dont_Print;
     }
-    struct Fn_Arg left_arg = build_fn_arg(parser, left_idx, status);
+    struct Fn_Arg left_arg = (function.arity >= 1) ? build_fn_arg(parser, left_idx, status) : (struct Fn_Arg){ 0 };
     // If got error at evaluation, don't call the function
     if (*status == Eval_Error) {
         return NAN;
     }
-    struct Fn_Arg right_arg = build_fn_arg(parser, right_idx, status);
+    struct Fn_Arg right_arg = (function.arity >= 2) ? build_fn_arg(parser, right_idx, status) : (struct Fn_Arg){ 0 };
     // If got error at evaluation, don't call the function
     if (*status == Eval_Error) {
         return NAN;
@@ -407,130 +396,131 @@ static inline double perform_function_call(struct Parser *const parser, const in
     return function.fn(parser->vars, left_arg, right_arg);
 }
 
-double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status) {
+double evaluate(struct Parser *const parser, const size_t node_idx, enum Evaluation_Status *const status) {
     if (parser == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
-    if (is_invalid_idx(parser, node_idx)) {
-        return NAN;
     }
     if ((status == NULL) || (*status == Eval_Error)) {
         return NAN;
     }
-    switch (get_tok(parser, node_idx).type) {
+    if (array_index_is_invalid(parser->nodes, node_idx)) {
+        *status = Eval_Dont_Print;
+        return NAN;
+    }
+    switch (parser->nodes[node_idx].tok.type) {
         case TOK_OPERATOR:
-            switch (get_tok(parser, node_idx).op) {
+            switch (parser->nodes[node_idx].tok.op) {
             case '+':
-                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                    print_column(get_tok(parser, node_idx).column);
-                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                if (array_index_is_invalid(parser->nodes, parser->nodes[node_idx].left_idx) || array_index_is_invalid(parser->nodes, parser->nodes[node_idx].right_idx)) {
+                    print_column(parser->nodes[node_idx].tok.column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", parser->nodes[node_idx].tok.op);
                     return NAN;
                 }
-                return (evaluate(parser, get_left_idx(parser, node_idx), status) + evaluate(parser, get_right_idx(parser, node_idx), status));
+                return (evaluate(parser, parser->nodes[node_idx].left_idx, status) + evaluate(parser, parser->nodes[node_idx].right_idx, status));
             case '-':
-                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                    print_column(get_tok(parser, node_idx).column);
-                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                if (array_index_is_invalid(parser->nodes, parser->nodes[node_idx].left_idx) || array_index_is_invalid(parser->nodes, parser->nodes[node_idx].right_idx)) {
+                    print_column(parser->nodes[node_idx].tok.column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", parser->nodes[node_idx].tok.op);
                     return NAN;
                 }
-                return (evaluate(parser, get_left_idx(parser, node_idx), status) - evaluate(parser, get_right_idx(parser, node_idx), status));
+                return (evaluate(parser, parser->nodes[node_idx].left_idx, status) - evaluate(parser, parser->nodes[node_idx].right_idx, status));
             case '*':
-                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                    print_column(get_tok(parser, node_idx).column);
-                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                if (array_index_is_invalid(parser->nodes, parser->nodes[node_idx].left_idx) || array_index_is_invalid(parser->nodes, parser->nodes[node_idx].right_idx)) {
+                    print_column(parser->nodes[node_idx].tok.column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", parser->nodes[node_idx].tok.op);
                     return NAN;
                 }
-                return (evaluate(parser, get_left_idx(parser, node_idx), status) * evaluate(parser, get_right_idx(parser, node_idx), status));
+                return (evaluate(parser, parser->nodes[node_idx].left_idx, status) * evaluate(parser, parser->nodes[node_idx].right_idx, status));
             case '/':
-                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                    print_column(get_tok(parser, node_idx).column);
-                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                if (array_index_is_invalid(parser->nodes, parser->nodes[node_idx].left_idx) || array_index_is_invalid(parser->nodes, parser->nodes[node_idx].right_idx)) {
+                    print_column(parser->nodes[node_idx].tok.column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", parser->nodes[node_idx].tok.op);
                     return NAN;
                 }
-                return (evaluate(parser, get_left_idx(parser, node_idx), status) / evaluate(parser, get_right_idx(parser, node_idx), status));
+                return (evaluate(parser, parser->nodes[node_idx].left_idx, status) / evaluate(parser, parser->nodes[node_idx].right_idx, status));
             case '^':
-                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                    print_column(get_tok(parser, node_idx).column);
-                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                if (array_index_is_invalid(parser->nodes, parser->nodes[node_idx].left_idx) || array_index_is_invalid(parser->nodes, parser->nodes[node_idx].right_idx)) {
+                    print_column(parser->nodes[node_idx].tok.column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", parser->nodes[node_idx].tok.op);
                     return NAN;
                 }
-                return pow(evaluate(parser, get_left_idx(parser, node_idx), status), evaluate(parser, get_right_idx(parser, node_idx), status));
+                return pow(evaluate(parser, parser->nodes[node_idx].left_idx, status), evaluate(parser, parser->nodes[node_idx].right_idx, status));
             case '=': {
-                if (is_invalid_idx(parser, get_left_idx(parser, node_idx)) || is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                    print_column(get_tok(parser, node_idx).column);
-                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                if (array_index_is_invalid(parser->nodes, parser->nodes[node_idx].left_idx) || array_index_is_invalid(parser->nodes, parser->nodes[node_idx].right_idx)) {
+                    print_column(parser->nodes[node_idx].tok.column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", parser->nodes[node_idx].tok.op);
                     return NAN;
                 }
-                if (get_tok(parser, get_left_idx(parser, node_idx)).type == TOK_FUNCTION) {
-                    print_column(get_tok(parser, get_left_idx(parser, node_idx)).column);
-                    print_error("Cannot create a variable named \"%s\", because already exists a function with this name!\n", functions[get_tok(parser, get_left_idx(parser, node_idx)).function_index].name);
+                if (parser->nodes[parser->nodes[node_idx].left_idx].tok.type == TOK_FUNCTION) {
+                    print_column(parser->nodes[parser->nodes[node_idx].left_idx].tok.column);
+                    print_error("Cannot create a variable named \"%s\", because already exists a function with this name!\n", functions[parser->nodes[parser->nodes[node_idx].left_idx].tok.function_index].name);
                     *status = Eval_Error;
                     return NAN;
                 }
-                if (get_tok(parser, get_left_idx(parser, node_idx)).type != TOK_NAME) {
-                    print_column(get_tok(parser, get_left_idx(parser, node_idx)).column);
+                if (parser->nodes[parser->nodes[node_idx].left_idx].tok.type != TOK_NAME) {
+                    print_column(parser->nodes[parser->nodes[node_idx].left_idx].tok.column);
                     print_error("Expected variable name for atribution!\n");
                     *status = Eval_Error;
                     return NAN;
                 }
-                const double result = evaluate(parser, get_right_idx(parser, node_idx), status);
+                const double result = evaluate(parser, parser->nodes[node_idx].right_idx, status);
                 if (*status != Eval_Error) {
-                    return assign_variable(parser->vars, get_tok(parser, get_left_idx(parser, node_idx)).name, result);
+                    return assign_variable(parser->vars, parser->nodes[parser->nodes[node_idx].left_idx].tok.name, result);
                 } else {
                     return NAN;
                 }
             }
             default:
-                print_column(get_tok(parser, node_idx).column);
-                print_error("Invalid binary operator at evaluation phase: %c\n", get_tok(parser, node_idx).op);
+                print_column(parser->nodes[node_idx].tok.column);
+                print_error("Invalid binary operator at evaluation phase: %c\n", parser->nodes[node_idx].tok.op);
                 *status = Eval_Error;
                 return NAN;
             }
         case TOK_UNARY_OPERATOR:
-            switch (get_tok(parser, node_idx).op) {
+            switch (parser->nodes[node_idx].tok.op) {
             case '-':
-                if (is_invalid_idx(parser, get_right_idx(parser, node_idx))) {
-                    print_column(get_tok(parser, node_idx).column);
-                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", get_tok(parser, node_idx).op);
+                if (array_index_is_invalid(parser->nodes, parser->nodes[node_idx].right_idx)) {
+                    print_column(parser->nodes[node_idx].tok.column);
+                    print_warning("Did you forget to include a operand for the operator \"%c\"?\n", parser->nodes[node_idx].tok.op);
                     return NAN;
                 }
-                return (-evaluate(parser, get_right_idx(parser, node_idx), status));
+                return (-evaluate(parser, parser->nodes[node_idx].right_idx, status));
             default:
-                print_column(get_tok(parser, node_idx).column);
-                print_error("Invalid unary operator at evaluation phase: %c\n", get_tok(parser, node_idx).op);
+                print_column(parser->nodes[node_idx].tok.column);
+                print_error("Invalid unary operator at evaluation phase: %c\n", parser->nodes[node_idx].tok.op);
                 *status = Eval_Error;
                 return NAN;
             }
         case TOK_NUMBER: {
-            const int64_t right_idx = get_right_idx(parser, node_idx);
-            if (is_valid_idx(parser, right_idx)) {
-                print_column(get_tok(parser, right_idx).column);
-                print_warning("Invalid %s at evaluation phase\n", get_token_type(get_tok(parser, right_idx).type));
+            const size_t right_idx = parser->nodes[node_idx].right_idx;
+            if (array_index_is_valid(parser->nodes, right_idx)) {
+                print_column(parser->nodes[right_idx].tok.column);
+                print_warning("Invalid %s at evaluation phase\n", get_token_type(parser->nodes[right_idx].tok.type));
             }
-            const int64_t left_idx = get_left_idx(parser, node_idx);
-            if (is_valid_idx(parser, left_idx)) {
-                print_column(get_tok(parser, left_idx).column);
-                print_warning("Invalid %s at evaluation phase\n", get_token_type(get_tok(parser, left_idx).type));
+            const size_t left_idx = parser->nodes[node_idx].left_idx;
+            if (array_index_is_valid(parser->nodes, left_idx)) {
+                print_column(parser->nodes[left_idx].tok.column);
+                print_warning("Invalid %s at evaluation phase\n", get_token_type(parser->nodes[left_idx].tok.type));
             }
-            return get_tok(parser, node_idx).number;
+            return parser->nodes[node_idx].tok.number;
         }
         case TOK_FUNCTION: 
             return perform_function_call(parser, node_idx, status);
         case TOK_NAME: {
-            const int64_t right_idx = get_right_idx(parser, node_idx);
-            if (is_valid_idx(parser, right_idx)) {
-                print_column(get_tok(parser, right_idx).column);
-                print_warning("Invalid %s at evaluation phase\n", get_token_type(get_tok(parser, right_idx).type));
+            const size_t right_idx = parser->nodes[node_idx].right_idx;
+            if (array_index_is_valid(parser->nodes, right_idx)) {
+                print_column(parser->nodes[right_idx].tok.column);
+                print_warning("Invalid %s at evaluation phase\n", get_token_type(parser->nodes[right_idx].tok.type));
             }
-            const int64_t left_idx = get_left_idx(parser, node_idx);
-            if (is_valid_idx(parser, left_idx)) {
-                print_column(get_tok(parser, left_idx).column);
-                print_warning("Invalid %s at evaluation phase\n", get_token_type(get_tok(parser, left_idx).type));
+            const size_t left_idx = parser->nodes[node_idx].left_idx;
+            if (array_index_is_valid(parser->nodes, left_idx)) {
+                print_column(parser->nodes[left_idx].tok.column);
+                print_warning("Invalid %s at evaluation phase\n", get_token_type(parser->nodes[left_idx].tok.type));
             }
-            int64_t index;
-            const struct String name = get_tok(parser, node_idx).name;
+            size_t index;
+            const struct String name = parser->nodes[node_idx].tok.name;
             if (search_variable(parser->vars, name, &index) != 0) {
-                print_column(get_tok(parser, node_idx).column);
+                print_column(parser->nodes[node_idx].tok.column);
                 print_error("Unrecognized name: \"%.*s\"!\n", name.length, name.data);
                 *status = Eval_Error;
                 return NAN;
@@ -538,40 +528,40 @@ double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evalua
             return get_variable_value(parser->vars, index);
         }
         case TOK_DELIMITER:
-            print_column(get_tok(parser, node_idx).column);
-            print_error("Unexpected delimiter at evaluation phase: %c\n", get_tok(parser, node_idx).op);
+            print_column(parser->nodes[node_idx].tok.column);
+            print_error("Unexpected delimiter at evaluation phase: %c\n", parser->nodes[node_idx].tok.op);
             *status = Eval_Error;
             return NAN;
         default:
-            print_column(get_tok(parser, node_idx).column);
-            print_error("Invalid token at evaluation phase: %c\n", get_tok(parser, node_idx).op);
+            print_column(parser->nodes[node_idx].tok.column);
+            print_error("Invalid token at evaluation phase: %c\n", parser->nodes[node_idx].tok.op);
             *status = Eval_Error;
             return NAN;
     }
 }
 
-static void print_node(struct Parser *const parser, const int64_t node_idx, const unsigned int level) {
-    if (is_invalid_idx(parser, node_idx)) {
+static void print_node(struct Parser *const parser, const size_t node_idx, const unsigned int level) {
+    if (array_index_is_invalid(parser->nodes, node_idx)) {
         return;
     }
-    print_token(get_tok(parser, node_idx));
-    const int64_t left_idx = get_left_idx(parser, node_idx);
-    if (is_valid_idx(parser, left_idx)) {
+    print_token(parser->nodes[node_idx].tok);
+    const size_t left_idx = parser->nodes[node_idx].left_idx;
+    if (array_index_is_valid(parser->nodes, left_idx)) {
         printf("%*sLEFT:  ", level * 2, "");
         print_node(parser, left_idx, level + 1);
     }
-    const int64_t right_idx = get_right_idx(parser, node_idx);
-    if (is_valid_idx(parser, right_idx)) {
+    const size_t right_idx = parser->nodes[node_idx].right_idx;
+    if (array_index_is_valid(parser->nodes, right_idx)) {
         printf("%*sRIGHT: ", level * 2, "");
         print_node(parser, right_idx, level + 1);
     }
 }
 
-void print_tree(struct Parser *const parser, const int64_t head_idx) {
+void print_tree(struct Parser *const parser, const size_t head_idx) {
     if (parser == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
-    if (is_invalid_idx(parser, head_idx)) {
+    if (array_index_is_invalid(parser->nodes, head_idx)) {
         return;
     }
     printf("Abstract syntax tree (AST) generated by the parser:\n");
@@ -582,34 +572,31 @@ void print_tree(struct Parser *const parser, const int64_t head_idx) {
 
 #define GRAPH_IDENTATION 4
 
-static void print_graph_node(struct Parser *const parser, const int64_t node_idx) {
-    if (is_invalid_idx(parser, node_idx)) {
+static void print_graph_node(struct Parser *const parser, const size_t node_idx) {
+    if (array_index_is_invalid(parser->nodes, node_idx)) {
         return;
     }
-    // Declaring the node
-    const struct Token tok = get_tok(parser, (int64_t)node_idx);
     printf("%*snode%03zu  [ label = \"", GRAPH_IDENTATION, "", node_idx);
-    print_token_string(tok);
+    print_token_string(parser->nodes[node_idx].tok);
     printf("\" ];\n");
     // Making connections between nodes
-    const int64_t left_idx = get_left_idx(parser, node_idx);
-    if (is_valid_idx(parser, left_idx)) {
+    const size_t left_idx = parser->nodes[node_idx].left_idx;
+    if (array_index_is_valid(parser->nodes, left_idx)) {
         print_graph_node(parser, left_idx);
         printf("%*snode%03zu -> node%03zu;\n", GRAPH_IDENTATION, "", node_idx, left_idx);
     }
-    const int64_t right_idx = get_right_idx(parser, node_idx);
-    if (is_valid_idx(parser, right_idx)) {
+    const size_t right_idx = parser->nodes[node_idx].right_idx;
+    if (array_index_is_valid(parser->nodes, right_idx)) {
         print_graph_node(parser, right_idx);
         printf("%*snode%03zu -> node%03zu;\n", GRAPH_IDENTATION, "", node_idx, right_idx);
     }
 }
 
-void print_graph(struct Parser *const parser, const int64_t head_idx) {
-    (void)head_idx;
+void print_graph(struct Parser *const parser, const size_t head_idx) {
     if (parser == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
-    if (is_invalid_idx(parser, head_idx)) {
+    if (array_index_is_invalid(parser->nodes, head_idx)) {
         return;
     }
     printf("digraph AST {\n");

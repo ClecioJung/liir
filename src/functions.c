@@ -28,6 +28,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "data-structures/sized_string.h"

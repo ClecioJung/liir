@@ -30,7 +30,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "data-structures/allocator.h"
 #include "data-structures/sized_string.h"
 
 enum Tok_Types {
@@ -54,8 +53,8 @@ struct Token {
 };
 
 struct Lexer {
-    // Table used to save the list of tokens
-    struct Allocator tokens;
+    // Dynamic array used to store the list of tokens
+    struct Token *tokens;
 };
 
 struct Lexer create_lex(const size_t initial_size);

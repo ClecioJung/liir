@@ -27,24 +27,21 @@
 #ifndef __PARSER
 #define __PARSER
 
-#include <stdint.h>
-
-#include "data-structures/allocator.h"
 #include "lex.h"
 #include "variables.h"
 
 // Nodes of the abstract syntax tree (AST)
 struct Token_Node {
     struct Token tok;
-    int64_t left_idx;
-    int64_t right_idx;
+    size_t left_idx;
+    size_t right_idx;
 };
 
 struct Parser {
     struct Lexer *const lexer;
     struct Variables *const vars;
-    // Structure used to save the nodes of the AST
-    struct Allocator nodes;
+    // Dynamic array used to store the nodes of the AST
+    struct Token_Node *nodes;
 };
 
 // Enumeration used to track the status of the evaluation phase
@@ -56,12 +53,12 @@ enum Evaluation_Status {
 
 struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size);
 void destroy_parser(struct Parser *const parser);
-int64_t parse(struct Parser *const parser);
-double evaluate(struct Parser *const parser, const int64_t node_idx, enum Evaluation_Status *const status);
-void print_tree(struct Parser *const parser, const int64_t head_idx);
+size_t parse(struct Parser *const parser);
+double evaluate(struct Parser *const parser, const size_t node_idx, enum Evaluation_Status *const status);
+void print_tree(struct Parser *const parser, const size_t head_idx);
 // Outputs to stdout a graph representation of the abstract syntax tree (AST) generated
 // It can be copied to graphviz to generate a visual graph representation
-void print_graph(struct Parser *const parser, const int64_t head_idx);
+void print_graph(struct Parser *const parser, const size_t head_idx);
 
 #endif  // __PARSER
 

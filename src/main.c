@@ -200,13 +200,11 @@ void interpret(struct Parser *const parser, const struct String line) {
     }
     if (!lex(parser->lexer, line)) {
         // If didn't found an error while executing the lexer
-        int64_t head_idx = parse(parser);
-        if (head_idx >= 0) {
-            enum Evaluation_Status status = Eval_OK;
-            const double result = evaluate(parser, head_idx, &status);
-            if (status == Eval_OK) {
-                printf("%lg\n", result);
-            }
+        const size_t head_idx = parse(parser);
+        enum Evaluation_Status status = Eval_OK;
+        const double result = evaluate(parser, head_idx, &status);
+        if (status == Eval_OK) {
+            printf("%lg\n", result);
         }
         printf("\n");
         if (actions & ACTION_PRINT_TOKENS) {

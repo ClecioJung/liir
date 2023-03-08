@@ -27,9 +27,6 @@
 #ifndef __VARIABLES
 #define __VARIABLES
 
-#include <stdint.h>
-
-#include "data-structures/allocator.h"
 #include "data-structures/sized_string.h"
 
 struct Variable {
@@ -38,18 +35,18 @@ struct Variable {
 };
 
 struct Variables {
-    // Table used to save the list of variables
-    struct Allocator list;
+    // Dynamic array used to store the list of variables
+    struct Variable *list;
 };
 
 struct Variables create_variables(const size_t initial_list_size);
 void destroy_variables(struct Variables *const vars);
 void clear_variables(struct Variables *const vars);
-int search_variable(struct Variables *const vars, const struct String name, int64_t *const index);
-void new_variable(struct Variables *const vars, const int64_t index, const struct String name, const double value);
+int search_variable(struct Variables *const vars, const struct String name, size_t *const index);
+void new_variable(struct Variables *const vars, const size_t index, const struct String name, const double value);
 int delete_variable(struct Variables *const vars, const struct String name);
 double assign_variable(struct Variables *const vars, const struct String name, const double value);
-double get_variable_value(struct Variables *const vars, const int64_t index);
+double get_variable_value(struct Variables *const vars, const size_t index);
 void print_variables(struct Variables *const vars);
 bool variable_list_is_empty(struct Variables *const vars);
 

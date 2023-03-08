@@ -33,16 +33,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "data-structures/allocator.h"
 #include "data-structures/sized_string.h"
 #include "functions.h"
 #include "printing.h"
 
+#define DYNAMIC_ARRAY_IMPLEMENTATION
+#include "data-structures/dynamic_array.h"
+
 struct Lexer create_lex(const size_t initial_size) {
-    struct Lexer lexer = (struct Lexer){
-        .tokens = allocator_construct(sizeof(struct Token), initial_size),
-    };
-    if (lexer.tokens.data == NULL) {
+    struct Lexer lexer = (struct Lexer){0};
+    lexer.tokens = array_new(sizeof(struct Token), initial_size);
+    if (lexer.tokens == NULL) {
         print_crash_and_exit("Couldn't allocate memory for the lexer!\n");
     }
     return lexer;
@@ -50,35 +51,8 @@ struct Lexer create_lex(const size_t initial_size) {
 
 void destroy_lex(struct Lexer *const lexer) {
     if (lexer != NULL) {
-        allocator_delete(&lexer->tokens);
+        array_del(lexer->tokens);
     }
-}
-
-static inline struct Token get_token_at(struct Lexer *const lexer, size_t index) {
-    return ((struct Token *)lexer->tokens.data)[index];
-}
-
-// This function returns true if found an error
-static inline bool add_token(struct Lexer *const lexer, const struct Token tok) {
-    // Check for errors
-    if (lexer->tokens.size > 0) {
-        const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
-        if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
-            if ((tok.type == TOK_DELIMITER) && (tok.op != '(')) {
-                print_column(last_token.column);
-                print_error("Functions that accept one or more argument, must be followed by parentheses \'(\'!\n");
-                return true;
-            }
-        }
-    }
-    // Add the token
-    int64_t index = allocator_new(&lexer->tokens);
-    if (index < 0) {
-        print_crash_and_exit("Couldn't allocate more memory for the lexer!\n");
-    }
-    struct Token *const token = allocator_get(lexer->tokens, index);
-    *token = tok;
-    return false;
 }
 
 static void advance_line(struct String *const line, int *const column, String_Length value) {
@@ -95,7 +69,7 @@ bool lex(struct Lexer *const lexer, struct String line) {
     if (lexer == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
-    allocator_free_all(&lexer->tokens);
+    array_free_all(lexer->tokens);
     for (int column = 0; line.length > 0;) {
         const char c = *line.data;
         struct Token tok = (struct Token){
@@ -132,10 +106,10 @@ bool lex(struct Lexer *const lexer, struct String line) {
                 tok.op = c;
                 // Check for unary operator
                 if (c == '-') {
-                    if (lexer->tokens.size == 0) {
+                    if (array_size(lexer->tokens) == 0) {
                         tok.type = TOK_UNARY_OPERATOR;
                     } else {
-                        const enum Tok_Types tok_type = get_token_at(lexer, lexer->tokens.size - 1).type;
+                        const enum Tok_Types tok_type = array_last(lexer->tokens).type;
                         if ((tok_type == TOK_OPERATOR) || (tok_type == TOK_UNARY_OPERATOR) || (tok_type == TOK_DELIMITER)) {
                             tok.type = TOK_UNARY_OPERATOR;
                         }
@@ -159,13 +133,23 @@ bool lex(struct Lexer *const lexer, struct String line) {
             }
             }
         }
-        if (add_token(lexer, tok)) {
-            return true;
+        // Check for errors
+        if (array_size(lexer->tokens) > 0) {
+            const struct Token last_token = array_last(lexer->tokens);
+            if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
+                if ((tok.type == TOK_DELIMITER) && (tok.op != '(')) {
+                    print_column(last_token.column);
+                    print_error("Functions that accept one or more argument, must be followed by parentheses \'(\'!\n");
+                    return true;
+                }
+            }
         }
+        // Add the token
+        array_push(lexer->tokens, tok);
     }
     // Check for errors
-    if (lexer->tokens.size > 0) {
-        const struct Token last_token = ((struct Token *)lexer->tokens.data)[lexer->tokens.size - 1];
+    if (array_size(lexer->tokens) > 0) {
+        const struct Token last_token = array_last(lexer->tokens);
         if ((last_token.type == TOK_FUNCTION) && (functions[last_token.function_index].arity >= 1)) {
             print_column(last_token.column);
             print_error("Functions with one or more argument must be followed by parentheses \'(\'!\n");
@@ -243,13 +227,13 @@ void print_tokens(struct Lexer *const lexer) {
     if (lexer == NULL) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
-    if (lexer->tokens.size == 0) {
+    if (array_size(lexer->tokens) == 0) {
         return;
     }
     printf("List of tokens generated by lexical analysis:\n");
     printf("Token     Value\n");
-    for (size_t tk_idx = 0; tk_idx < lexer->tokens.size; tk_idx++) {
-        print_token(get_token_at(lexer, tk_idx));
+    for (size_t tk_idx = 0; tk_idx < array_size(lexer->tokens); tk_idx++) {
+        print_token(lexer->tokens[tk_idx]);
     }
     printf("\n");
 }
