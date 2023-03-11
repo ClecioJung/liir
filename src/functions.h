@@ -39,7 +39,7 @@ struct Fn_Arg {
     const struct String name;
 };
 
-typedef double (*Function_Pointer)(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg);
+typedef double (*Function_Pointer)(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg);
 
 struct Function {
     const char *name;
@@ -50,13 +50,13 @@ struct Function {
 };
 
 extern const struct Function functions[];
-extern const int functions_quantity;
+extern const size_t functions_quantity;
 
-int search_function(const struct String name);
+size_t search_function(const struct String name);
 void print_functions(void);
 
 // Defined on main.c
-double fn_exit(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg);
+double fn_exit(struct Variables *const vars, size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg);
 
 #endif  // __FUNCTIONS
 

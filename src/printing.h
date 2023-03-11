@@ -27,6 +27,7 @@
 #ifndef __PRINT_ERRORS
 #define __PRINT_ERRORS
 
+#include <stddef.h>
 
 // Font definitions
 #define RESET_FONT "\033[0m"
@@ -80,7 +81,7 @@
 void print_crash_and_exit(const char *const msg, ...) __attribute__((__noreturn__, format(printf, 1, 2)));
 void print_error(const char *const msg, ...) __attribute__((format(printf, 1, 2)));
 void print_warning(const char *const msg, ...) __attribute__((format(printf, 1, 2)));
-void print_column(const int column);
+void print_column(const size_t column);
 
 #endif  // __PRINT_ERRORS
 

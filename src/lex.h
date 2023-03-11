@@ -43,11 +43,11 @@ enum Tok_Types {
 
 struct Token {
     enum Tok_Types type;
-    int column;
+    size_t column;
     union {
         char op;
         double number;
-        int function_index;
+        size_t function_index;
         struct String name;
     };
 };

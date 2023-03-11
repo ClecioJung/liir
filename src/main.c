@@ -186,8 +186,9 @@ static bool parse_arguments(const int argc, const char *const argv[]) {
     return false;
 }
 
-double fn_exit(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_exit(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)first_arg;
     (void)second_arg;
     actions |= ACTION_EXIT;

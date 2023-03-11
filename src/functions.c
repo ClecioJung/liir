@@ -26,6 +26,7 @@
 
 #include "functions.h"
 
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,7 +44,8 @@
 #define M_E 2.7182818284590452354
 #endif
 
-double fn_load(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_load(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)column;
     (void)first_arg;
     (void)second_arg;
     printf("Please insert the name of the file from which the variables should be loaded?\n");
@@ -52,7 +54,8 @@ double fn_load(struct Variables *const vars, const struct Fn_Arg first_arg, cons
     return NAN;
 }
 
-double fn_save(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_save(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)column;
     (void)first_arg;
     (void)second_arg;
     printf("Please insert the name of the file in which the variables should be saved?\n");
@@ -61,16 +64,18 @@ double fn_save(struct Variables *const vars, const struct Fn_Arg first_arg, cons
     return NAN;
 }
 
-double fn_clear(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_clear(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)column;
     (void)first_arg;
     (void)second_arg;
     clear_variables(vars);
     return NAN;
 }
 
-double fn_delete(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_delete(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)second_arg;
     if ((first_arg.name.data == NULL) || (first_arg.name.length == 0)) {
+        print_column(column);
         print_error("The function \"delete\" expects a reference to a variable as argument\n");
         return NAN;
     }
@@ -80,7 +85,8 @@ double fn_delete(struct Variables *const vars, const struct Fn_Arg first_arg, co
     return NAN;
 }
 
-double fn_variables(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_variables(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+    (void)column;
     (void)first_arg;
     (void)second_arg;
     if (variable_list_is_empty(vars)) {
@@ -91,202 +97,366 @@ double fn_variables(struct Variables *const vars, const struct Fn_Arg first_arg,
     return NAN;
 }
 
-double fn_functions(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_functions(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)first_arg;
     (void)second_arg;
     print_functions();
     return NAN;
 }
 
-double fn_euler(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_euler(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)first_arg;
     (void)second_arg;
     return M_E;
 }
 
-double fn_pi(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_pi(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)first_arg;
     (void)second_arg;
     return M_PI;
 }
 
-double fn_ceil(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_ceil(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return ceil(first_arg.value);
 }
 
-double fn_floor(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_floor(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return floor(first_arg.value);
 }
 
-double fn_trunc(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_trunc(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return trunc(first_arg.value);
 }
 
-double fn_round(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_round(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return round(first_arg.value);
 }
 
-double fn_abs(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_abs(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return fabs(first_arg.value);
 }
 
-double fn_sqrt(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_sqrt(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return sqrt(first_arg.value);
+    errno = 0;
+    const double value = sqrt(first_arg.value);
+    if (errno == EDOM) {
+        print_column(column);
+        print_warning("The sqrt function received an argument less than zero!\n");
+    }
+    return value;
 }
 
-double fn_cbrt(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_cbrt(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return cbrt(first_arg.value);
 }
 
-double fn_exp(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_exp(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return exp(first_arg.value);
+    errno = 0;
+    const double value = exp(first_arg.value);
+    if (errno == ERANGE) {
+        print_column(column);
+        print_warning("Overflow occurred when calling the exp function!\n");
+    }
+    return value;
 }
 
-double fn_exp2(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_exp2(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return exp2(first_arg.value);
+    errno = 0;
+    const double value = exp2(first_arg.value);
+    if (errno == ERANGE) {
+        print_column(column);
+        print_warning("Overflow occurred when calling the exp2 function!\n");
+    }
+    return value;
 }
 
-double fn_log(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_log(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return log(first_arg.value);
+    errno = 0;
+    const double value = log(first_arg.value);
+    switch (errno) {
+    case EDOM:
+        print_column(column);
+        print_warning("The log function received an argument less than zero!\n");
+        break;
+    case ERANGE:
+        print_column(column);
+        print_warning("The log function received an argument equal to zero!\n");
+        break;
+    }
+    return value;
 }
 
-double fn_log10(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_log10(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return log10(first_arg.value);
+    errno = 0;
+    const double value = log10(first_arg.value);
+    switch (errno) {
+    case EDOM:
+        print_column(column);
+        print_warning("The log10 function received an argument less than zero!\n");
+        break;
+    case ERANGE:
+        print_column(column);
+        print_warning("The log10 function received an argument equal to zero!\n");
+        break;
+    }
+    return value;
 }
 
-double fn_log2(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_log2(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return log2(first_arg.value);
+    errno = 0;
+    const double value = log2(first_arg.value);
+    switch (errno) {
+    case EDOM:
+        print_column(column);
+        print_warning("The log2 function received an argument less than zero!\n");
+        break;
+    case ERANGE:
+        print_column(column);
+        print_warning("The log2 function received an argument equal to zero!\n");
+        break;
+    }
+    return value;
 }
 
-double fn_erf(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_erf(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return erf(first_arg.value);
 }
 
-double fn_gamma(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_gamma(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return tgamma(first_arg.value);
+    errno = 0;
+    const double value = tgamma(first_arg.value);
+    switch (errno) {
+    case EDOM:
+        print_column(column);
+        print_warning("The gamma function received an argument less than zero!\n");
+        break;
+    case ERANGE:
+        print_column(column);
+        print_warning("Overflow occurred when calling the gamma function!\n");
+        break;
+    }
+    return value;
 }
 
-double fn_sin(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_sin(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return sin(first_arg.value);
+    errno = 0;
+    const double value = sin(first_arg.value);
+    if (errno == EDOM) {
+        print_column(column);
+        print_warning("The sin function received an invalid argument!\n");
+    }
+    return value;
 }
 
-double fn_cos(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_cos(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return cos(first_arg.value);
+    errno = 0;
+    const double value = cos(first_arg.value);
+    if (errno == EDOM) {
+        print_column(column);
+        print_warning("The cos function received an invalid argument!\n");
+    }
+    return value;
 }
 
-double fn_tan(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_tan(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return tan(first_arg.value);
+    errno = 0;
+    const double value = tan(first_arg.value);
+    if (errno == EDOM) {
+        print_column(column);
+        print_warning("The tan function received an invalid argument!\n");
+    }
+    return value;
 }
 
-double fn_asin(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_asin(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return asin(first_arg.value);
+    errno = 0;
+    const double value = asin(first_arg.value);
+    if (errno == EDOM) {
+        print_column(column);
+        print_warning("The asin function received an argument outside the range [-1, 1]!\n");
+    }
+    return value;
 }
 
-double fn_acos(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_acos(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return acos(first_arg.value);
+    errno = 0;
+    const double value = acos(first_arg.value);
+    if (errno == EDOM) {
+        print_column(column);
+        print_warning("The acos function received an argument outside the range [-1, 1]!\n");
+    }
+    return value;
 }
 
-double fn_atan(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_atan(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return atan(first_arg.value);
 }
 
-double fn_sinh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_sinh(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return sinh(first_arg.value);
+    errno = 0;
+    const double value = sinh(first_arg.value);
+    if (errno == ERANGE) {
+        print_column(column);
+        print_warning("Overflow occurred when calling the sinh function!\n");
+    }
+    return value;
 }
 
-double fn_cosh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_cosh(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return cosh(first_arg.value);
+    errno = 0;
+    const double value = cosh(first_arg.value);
+    if (errno == ERANGE) {
+        print_column(column);
+        print_warning("Overflow occurred when calling the cosh function!\n");
+    }
+    return value;
 }
 
-double fn_tanh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_tanh(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return tanh(first_arg.value);
 }
 
-double fn_asinh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_asinh(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     (void)second_arg;
     return asinh(first_arg.value);
 }
 
-double fn_acosh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_acosh(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return acosh(first_arg.value);
+    errno = 0;
+    const double value = acosh(first_arg.value);
+    if (errno == EDOM) {
+        print_column(column);
+        print_warning("The argument passed to the acosh function must be greather than 1!\n");
+    }
+    return value;
 }
 
-double fn_atanh(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_atanh(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
     (void)second_arg;
-    return atanh(first_arg.value);
+    errno = 0;
+    const double value = atanh(first_arg.value);
+    switch (errno) {
+    case EDOM:
+        print_column(column);
+        print_warning("The atanh function received an argument outside the range [-1, 1]!\n");
+        break;
+    case ERANGE:
+        print_column(column);
+        print_warning("The atanh function received an argument equal to 1 or -1!\n");
+        break;
+    }
+    return value;
 }
 
-double fn_pow(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_pow(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return pow(first_arg.value, second_arg.value);
+    errno = 0;
+    const double value = pow(first_arg.value, second_arg.value);
+    switch (errno) {
+    case EDOM:
+        print_column(column);
+        print_warning("The first argument passed to the pow function is negative, while the second is finite noninteger number!\n");
+        break;
+    case ERANGE:
+        print_column(column);
+        print_warning("Overflow occurred when calling the pow function!\n");
+        break;
+    }
+    return value;
 }
 
-double fn_atan2(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_atan2(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
+    (void)column;
     return atan2(first_arg.value, second_arg.value);
 }
 
-double fn_hypot(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_hypot(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return hypot(first_arg.value, second_arg.value);
+    errno = 0;
+    const double value = hypot(first_arg.value, second_arg.value);
+    if (errno == ERANGE) {
+        print_column(column);
+        print_warning("Overflow occurred when calling the hypot function!\n");
+    }
+    return value;
 }
 
-double fn_mod(struct Variables *const vars, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
+double fn_mod(struct Variables *const vars, const size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg) {
     (void)vars;
-    return fmod(first_arg.value, second_arg.value);
+    errno = 0;
+    const double value = fmod(first_arg.value, second_arg.value);
+    if (errno == EDOM) {
+        print_column(column);
+        print_warning("Either the first argument of mod is infinity, or the second is zero!\n");
+    }
+    return value;
 }
 
 const struct Function functions[] = {
@@ -417,7 +587,7 @@ const struct Function functions[] = {
         .fn = &fn_exp2,
     },
     {
-        .name = "ln",
+        .name = "log",
         .description = "Returns the natural logarithm of it's argument",
         .arity = 1,
         .return_value = true,
@@ -567,11 +737,11 @@ const struct Function functions[] = {
     },
 };
 
-const int functions_quantity = (sizeof(functions) / sizeof(functions[0]));
+const size_t functions_quantity = (sizeof(functions) / sizeof(functions[0]));
 
-int search_function(const struct String name) {
+size_t search_function(const struct String name) {
     // Sequential search in the functions list
-    for (int i = 0; i < functions_quantity; i++) {
+    for (size_t i = 0; i < functions_quantity; i++) {
         const String_Length function_length = (String_Length)strlen(functions[i].name);
         if (name.length == function_length) {
             if (!strncmp(name.data, functions[i].name, name.length)) {
@@ -588,7 +758,7 @@ extern unsigned int max_uint(const unsigned int a, const unsigned int b);
 
 static inline unsigned int longest_name_functions(void) {
     unsigned int length = 0;
-    for (int i = 0; i < functions_quantity; i++) {
+    for (size_t i = 0; i < functions_quantity; i++) {
         length = max_uint(length, (unsigned int)strlen(functions[i].name));
     }
     return length;
@@ -599,7 +769,7 @@ void print_functions(void) {
     const unsigned int max_length = max_uint(longest_name_functions(), (unsigned int)strlen(header));
     printf("List of built-in functions:\n");
     printf("%-*s Description\n", max_length, header);
-    for (int i = 0; i < functions_quantity; i++) {
+    for (size_t i = 0; i < functions_quantity; i++) {
         printf("%-*s %s\n", max_length, functions[i].name, functions[i].description);
     }
     printf("\n");

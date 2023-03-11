@@ -70,32 +70,6 @@ static size_t new_node(struct Parser *const parser, const struct Token tok) {
     return(array_size(parser->nodes) - 1);
 }
 
-/*
-static inline struct Token_Node *get_node_ptr(struct Parser *const parser, int64_t index) {
-    return allocator_get(parser->nodes, index);
-}
-
-static inline struct Token get_tok(struct Parser *const parser, int64_t index) {
-    return get_node_ptr(parser, index)->tok;
-}
-
-static inline int64_t get_right_idx(struct Parser *const parser, int64_t index) {
-    return get_node_ptr(parser, index)->right_idx;
-}
-
-static inline int64_t get_left_idx(struct Parser *const parser, int64_t index) {
-    return get_node_ptr(parser, index)->left_idx;
-}
-
-static inline int64_t is_valid_idx(struct Parser *const parser, int64_t index) {
-    return allocator_is_valid(parser->nodes, index);
-}
-
-static inline int64_t is_invalid_idx(struct Parser *const parser, int64_t index) {
-    return allocator_is_invalid(parser->nodes, index);
-}
-*/
-
 static int get_op_precedence(const char op) {
     const char precedence[] = { '^', '/', '*', '-', '+', };
     const int num_ops = sizeof(precedence) / sizeof(precedence[0]);
@@ -393,7 +367,7 @@ static inline double perform_function_call(struct Parser *const parser, const si
     if (*status == Eval_Error) {
         return NAN;
     }
-    return function.fn(parser->vars, left_arg, right_arg);
+    return function.fn(parser->vars, parser->nodes[node_idx].tok.column, left_arg, right_arg);
 }
 
 double evaluate(struct Parser *const parser, const size_t node_idx, enum Evaluation_Status *const status) {

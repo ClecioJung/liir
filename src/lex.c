@@ -55,7 +55,7 @@ void destroy_lex(struct Lexer *const lexer) {
     }
 }
 
-static void advance_line(struct String *const line, int *const column, String_Length value) {
+static void advance_line(struct String *const line, size_t *const column, String_Length value) {
     if (value > line->length) {
         value = line->length;
     }
@@ -70,7 +70,7 @@ bool lex(struct Lexer *const lexer, struct String line) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     array_free_all(lexer->tokens);
-    for (int column = 0; line.length > 0;) {
+    for (size_t column = 0; line.length > 0;) {
         const char c = *line.data;
         struct Token tok = (struct Token){
             .column = column,
@@ -85,7 +85,7 @@ bool lex(struct Lexer *const lexer, struct String line) {
             tok.type = TOK_NUMBER;
         } else if (isalpha(c) || c == '_') {
             const struct String name = parse_name(line);
-            const int function_index = search_function(name);
+            const size_t function_index = search_function(name);
             if (function_index < functions_quantity) {
                 tok.type = TOK_FUNCTION;
                 tok.function_index = function_index;

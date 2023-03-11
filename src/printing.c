@@ -60,8 +60,8 @@ void print_warning(const char *const msg, ...) {
     va_end(args);
 }
 
-void print_column(const int column) {
-    fprintf(stderr, "%*s^\n", (column + 2), "");
+void print_column(const size_t column) {
+    fprintf(stderr, "%*s^\n", (int)(column + 2), "");
 }
 
 //------------------------------------------------------------------------------
