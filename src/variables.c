@@ -64,35 +64,30 @@ void clear_variables(struct Variables *const vars) {
     array_free_all(vars->list);
 }
 
-// This function returns zero if found the variable in the list
+// This function returns EXIT_SUCCESS if found the variable in the list
 // It was implemented this way in order to do a optimization in the function assign_variable
 // In this function, if the variable was not found, we already know the correct index to insert it,
-// preserving the order
+// preserving the list of variables sorted
 int search_variable(struct Variables *const vars, const struct String name, size_t *const index) {
     if ((vars == NULL) || (index == NULL)) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
-    if (array_size(vars->list) == 0) {
-        *index = 0;
-        return -1;
-    }
     // Binary search in variables list
-    *index = array_size(vars->list);  // middle
     size_t low = 0;
     size_t high = array_size(vars->list) - 1;
-    int comp = -1;
     while ((low <= high) && array_index_is_valid(vars->list, high)) {
-        *index = (low + high) / 2;
-        comp = string_compare(name, vars->list[*index].name);
+        *index = (low + high) / 2; // middle
+        const int comp = string_compare(name, vars->list[*index].name);
         if (comp < 0) {
             high = *index - 1;
         } else if (comp > 0) {
             low = *index + 1;
         } else {
-            break;
+            return EXIT_SUCCESS;
         }
     }
-    return comp;
+    *index = low;
+    return EXIT_FAILURE;
 }
 
 void new_variable(struct Variables *const vars, const size_t index, const struct String name, const double value) {
@@ -115,8 +110,7 @@ int delete_variable(struct Variables *const vars, const struct String name) {
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     size_t index;
-    const int search = search_variable(vars, name, &index);
-    if (search != 0) {
+    if (search_variable(vars, name, &index) != EXIT_SUCCESS) {
         // Didn't found the variable in the list
         return EXIT_FAILURE;
     }
@@ -131,12 +125,8 @@ double assign_variable(struct Variables *const vars, const struct String name, c
         print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
     }
     size_t index;
-    const int search = search_variable(vars, name, &index);
-    if (search != 0) {
+    if (search_variable(vars, name, &index) != EXIT_SUCCESS) {
         // Insert new variable in alphabetical order
-        if (search > 0) {
-            index++;
-        }
         new_variable(vars, index, name, value);
     } else {
         // Variable already exist

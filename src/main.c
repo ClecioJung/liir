@@ -49,7 +49,7 @@ enum Actions {
 
 typedef void (*Arg_Function)(const char *const parameter);
 
-// Table used to concentrate all the information related to the comand line arguments
+// Table used to concentrate all the information related to the command line arguments
 struct Arg_Cmd {
     const char *const cmd;
     const Arg_Function function;

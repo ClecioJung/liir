@@ -493,7 +493,7 @@ double evaluate(struct Parser *const parser, const size_t node_idx, enum Evaluat
             }
             size_t index;
             const struct String name = parser->nodes[node_idx].tok.name;
-            if (search_variable(parser->vars, name, &index) != 0) {
+            if (search_variable(parser->vars, name, &index) != EXIT_SUCCESS) {
                 print_column(parser->nodes[node_idx].tok.column);
                 print_error("Unrecognized name: \"%.*s\"!\n", name.length, name.data);
                 *status = Eval_Error;
