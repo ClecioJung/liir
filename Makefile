@@ -42,7 +42,7 @@ endif
 DEBUGGER      := gdb
 
 # Flags for compiler
-COMMON_FLAGS  := -W -Wall -Wextra -pedantic -Wconversion -Werror -flto -std=c11
+COMMON_FLAGS  := -W -Wall -Wextra -pedantic -Wconversion -Wswitch-enum -Werror -flto -std=c11
 RELEASE_FLAGS := -O2
 DEBUG_FLAGS   := -O0 -g -DDEBUG
 LINK_FLAGS    := -flto
@@ -200,7 +200,7 @@ log:
 	git log --oneline --decorate --all --graph
 
 clean:
-	$(RM) -r $(RELEASE_DIR) $(DEBUG_DIR) *.d *.o *.a *.so
+	$(RM) -r $(RELEASE_DIR) $(DEBUG_DIR) *.d *.o *.a *.so *.exe
 
 remade: clean release
 

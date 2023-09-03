@@ -3,14 +3,14 @@
 ## Overview
 
 **liir** is a simple [REPL (Read, eval, print and loop)](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) system developed in C. LIIR stands for `Leia, interprete, imprima e repita` which is the brazilian portuguese translation for the english acronym `Read, eval, print and loop - REPL`. 
-This project posseses the following characteristics:
+Key features of this project include:
 
 - Developed with C11;
-- This code was tested only on Linux (it can be compiled with GNU GCC or clang);
-- It can save and load variables from a file;
+- Cross-platform compatibility: Tested on Linux and Windows, and can be compiled with GNU GCC, clang, or MinGW (the compilation process was always run on a linux system);
+- It is capable of saving and loading variables from a file;
 - It can export the abstract syntax tree generated from expressions to a [graphviz](https://graphviz.org/) representation;
-- All the operations are performed with `double` precision floating point numbers (64 bits);
-- Run `./release/liir --help` to see the command line options;
+- All the operations are performed with double-precision floating-point numbers (64 bits);
+- Run `./release/liir --help` to view available command-line options;
 
 ## Usage
 
