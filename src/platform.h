@@ -21,51 +21,55 @@
 // SOFTWARE.
 
 //------------------------------------------------------------------------------
-// SOURCE
+// HEADER
 //------------------------------------------------------------------------------
 
-#include "printing.h"
+#ifndef __PLATFORM
+#define __PLATFORM
 
-#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 
-#include "platform.h"
+// This module comprises platform-dependent code that should remain
+// isolated from other components within this project. Any errors
+// detected within the functions it provides are considered non-critical
+// and do not halt the program's execution.
 
-void print_crash_and_exit(const char *const msg, ...) {
-    foreground_color(stderr, RED_FOREGROUND);
-    fprintf(stderr, "[Crash] ");
-    foreground_color(stderr, DEFAULT_FOREGROUND);
-    va_list args;
-    va_start(args, msg);
-    vfprintf(stderr, msg, args);
-    va_end(args);
-    exit(EXIT_FAILURE);
-}
+enum Foreground_Color {
+    DEFAULT_FOREGROUND = 0,
+    BLACK_FOREGROUND,
+    RED_FOREGROUND,
+    GREEN_FOREGROUND,
+    YELLOW_FOREGROUND,
+    BLUE_FOREGROUND,
+    MAGENTA_FOREGROUND,
+    CYAN_FOREGROUND,
+    WHITE_FOREGROUND,
+};
 
-void print_error(const char *const msg, ...) {
-    foreground_color(stderr, RED_FOREGROUND);
-    fprintf(stderr, "[Error] ");
-    foreground_color(stderr, DEFAULT_FOREGROUND);
-    va_list args;
-    va_start(args, msg);
-    vfprintf(stderr, msg, args);
-    va_end(args);
-}
+enum Keys {
+    KEY_CHAR, // Normal character - Not a special key
+    KEY_ARROW_UP,
+    KEY_ARROW_DOWN,
+    KEY_ARROW_RIGHT,
+    KEY_ARROW_LEFT,
+    KEY_END,
+    KEY_HOME,
+    KEY_CTRL_RIGHT, // Ctrl + arrow right
+    KEY_CTRL_LEFT,  // Ctrl + arrow left
+    KEY_ENTER,
+    KEY_TAB,
+    KEY_DEL,
+    KEY_BACKSPACE,
+};
 
-void print_warning(const char *const msg, ...) {
-    foreground_color(stderr, YELLOW_FOREGROUND);
-    fprintf(stderr, "[Warning] ");
-    foreground_color(stderr, DEFAULT_FOREGROUND);
-    va_list args;
-    va_start(args, msg);
-    vfprintf(stderr, msg, args);
-    va_end(args);
-}
+enum Keys read_key_without_echo(char *c);
+bool foreground_color(FILE *file, enum Foreground_Color color);
+bool move_cursor_right(FILE *file, const int n);
+bool move_cursor_left(FILE *file, const int n);
+bool move_cursor_to_column(FILE *file, const int n);
 
-void print_column(const size_t column) {
-    fprintf(stderr, "%*s^\n", (int)(column + 2), "");
-}
+#endif  // __PLATFORM
 
 //------------------------------------------------------------------------------
 // END

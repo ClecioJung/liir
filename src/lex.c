@@ -36,6 +36,7 @@
 #include "data-structures/sized_string.h"
 #include "functions.h"
 #include "printing.h"
+#include "platform.h"
 
 #define DYNAMIC_ARRAY_IMPLEMENTATION
 #include "data-structures/dynamic_array.h"
@@ -203,22 +204,34 @@ void print_token_string(const struct Token tok) {
 void print_token(const struct Token tok) {
     switch (tok.type) {
     case TOK_OPERATOR:
-        printf(WHITE_FOREGROUND "OPERATOR  %c\n" RESET_FONT, tok.op);
+        foreground_color(stdout, WHITE_FOREGROUND);
+        printf("OPERATOR  %c\n", tok.op);
+        foreground_color(stdout, DEFAULT_FOREGROUND);
         break;
     case TOK_UNARY_OPERATOR:
-        printf(WHITE_FOREGROUND "UNARY OP. %c\n" RESET_FONT, tok.op);
+        foreground_color(stdout, WHITE_FOREGROUND);
+        printf("UNARY OP. %c\n", tok.op);
+        foreground_color(stdout, DEFAULT_FOREGROUND);
         break;
     case TOK_DELIMITER:
-        printf(WHITE_FOREGROUND "DELIMITER %c\n" RESET_FONT, tok.op);
+        foreground_color(stdout, WHITE_FOREGROUND);
+        printf("DELIMITER %c\n", tok.op);
+        foreground_color(stdout, DEFAULT_FOREGROUND);
         break;
     case TOK_NUMBER:
-        printf(YELLOW_FOREGROUND "NUMBER    %g\n" RESET_FONT, tok.number);
+        foreground_color(stdout, YELLOW_FOREGROUND);
+        printf("NUMBER    %g\n", tok.number);
+        foreground_color(stdout, DEFAULT_FOREGROUND);
         break;
     case TOK_NAME:
-        printf(MAGENTA_FOREGROUND "NAME      %.*s\n" RESET_FONT, tok.name.length, tok.name.data);
+        foreground_color(stdout, MAGENTA_FOREGROUND);
+        printf("NAME      %.*s\n", tok.name.length, tok.name.data);
+        foreground_color(stdout, DEFAULT_FOREGROUND);
         break;
     case TOK_FUNCTION:
-        printf(CYAN_FOREGROUND "FUNCTION  %s\n" RESET_FONT, functions[tok.function_index].name);
+        foreground_color(stdout, CYAN_FOREGROUND);
+        printf("FUNCTION  %s\n", functions[tok.function_index].name);
+        foreground_color(stdout, DEFAULT_FOREGROUND);
         break;
     }
 }
