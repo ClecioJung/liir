@@ -10,67 +10,111 @@ jobs:
   build-linux-gcc:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: make
-      run: make
-      env:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: make
+        env:
           CC: gcc
           CXX: g++
           
   build-linux-clang:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: make
-      run: make
-      env:
+      - uses: actions/checkout@v3
+      - name: Setting up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+      - name: Build
+        run: make
+        env:
           CC: clang
           CXX: clang++
 
   build-linux-mingw:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Install MinGW
-      run: |
+      - uses: actions/checkout@v3
+      - name: Setting up environment
+        run: |
           sudo apt-get update
           sudo apt-get install -y mingw-w64
-    - name: make
-      run: make
-      env:
+      - name: Build
+        run: make
+        env:
           CC: x86_64-w64-mingw32-gcc
           CXX: x86_64-w64-mingw32-g++
   
+  build-windows-mingw:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: git make mingw-w64-x86_64-gcc
+      - name: Build
+        run: make
+        env:
+          CC: gcc
+          CXX: g++
+
   build-linux-gcc-debug:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: make
-      run: make debug
-      env:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: make debug
+        env:
           CC: gcc
           CXX: g++
           
   build-linux-clang-debug:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: make
-      run: make debug
-      env:
+      - uses: actions/checkout@v3
+      - name: Setting up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+      - name: Build
+        run: make debug
+        env:
           CC: clang
           CXX: clang++
 
   build-linux-mingw-debug:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Install MinGW
-      run: |
+      - uses: actions/checkout@v3
+      - name: Setting up environment
+        run: |
           sudo apt-get update
           sudo apt-get install -y mingw-w64
-    - name: make
-      run: make debug
-      env:
+      - name: Build
+        run: make debug
+        env:
           CC: x86_64-w64-mingw32-gcc
           CXX: x86_64-w64-mingw32-g++
+  
+  build-windows-mingw-debug:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: git make mingw-w64-x86_64-gcc
+      - name: Build
+        run: make debug
+        env:
+          CC: gcc
+          CXX: g++
