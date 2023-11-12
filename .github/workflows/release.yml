@@ -1,0 +1,60 @@
+name: Upload Release Assets
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  build:
+    name: Upload Release Assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setting up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64
+      - name: Build for linux
+        run: |
+          make clean
+          gcc -v
+          make CC=gcc
+          tar -czvf liir-linux.tar.gz release/liir
+      - name: Build for windows
+        run: |
+          make clean
+          x86_64-w64-mingw32-gcc -v
+          make CC=x86_64-w64-mingw32-gcc
+          zip liir-windows.zip release/liir.exe
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Linux Release Asset
+        id: upload-linux-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: liir-linux.tar.gz
+          asset_name: liir-linux.tar.gz
+          asset_content_type: application/gzip
+      - name: Upload Windows Release Asset
+        id: upload-windows-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: liir-windows.zip
+          asset_name: liir-windows.zip
+          asset_content_type: application/zip

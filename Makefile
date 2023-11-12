@@ -67,6 +67,13 @@ else
     PLATFORM  := $(shell uname -s)
 endif
 
+# Executable suffix is .exe for windows target
+ifeq (,$(findstring mingw,$(CC))$(findstring Windows,$(PLATFORM)))
+    SUFFIX :=
+else
+    SUFFIX := .exe
+endif
+
 # Create a directory
 ifndef MKDIR_P
 	MKDIR_P   := mkdir -p
@@ -96,8 +103,8 @@ endif
 rwildcard     = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
 # Name of the outputs of each rule
-RELEASE_EXEC  := $(addprefix $(RELEASE_DIR)/, $(PROJECT))
-DEBUG_EXEC    := $(addprefix $(DEBUG_DIR)/, $(PROJECT))
+RELEASE_EXEC  := $(RELEASE_DIR)/$(PROJECT)$(SUFFIX)
+DEBUG_EXEC    := $(DEBUG_DIR)/$(PROJECT)$(SUFFIX)
 
 # Source files
 SRCS          := $(call rwildcard,$(SDIR),*.c)
