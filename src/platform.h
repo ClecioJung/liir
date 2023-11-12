@@ -30,6 +30,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(a)
+#endif
+
 // This module comprises platform-dependent code that should remain
 // isolated from other components within this project. Any errors
 // detected within the functions it provides are considered non-critical
@@ -63,11 +67,16 @@ enum Keys {
     KEY_BACKSPACE,
 };
 
-enum Keys read_key_without_echo(char *c);
-bool foreground_color(FILE *file, enum Foreground_Color color);
-bool move_cursor_right(FILE *file, const int n);
-bool move_cursor_left(FILE *file, const int n);
-bool move_cursor_to_column(FILE *file, const int n);
+enum Keys read_key_without_echo(char *c)
+    __attribute__((nonnull));
+bool foreground_color(FILE *file, enum Foreground_Color color)
+    __attribute__((nonnull));
+bool move_cursor_right(FILE *file, const int n)
+    __attribute__((nonnull));
+bool move_cursor_left(FILE *file, const int n)
+    __attribute__((nonnull));
+bool move_cursor_to_column(FILE *file, const int n)
+    __attribute__((nonnull));
 
 #endif  // __PLATFORM
 

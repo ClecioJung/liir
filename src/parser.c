@@ -40,9 +40,6 @@
 #define INVALID_PARSER_INDEX ((size_t)-1)
 
 struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size) {
-    if ((lexer == NULL) || (vars == NULL)) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     struct Parser parser = (struct Parser){
         .lexer = lexer,
         .vars = vars,
@@ -55,9 +52,7 @@ struct Parser create_parser(struct Lexer *const lexer, struct Variables *const v
 }
 
 void destroy_parser(struct Parser *const parser) {
-    if (parser != NULL) {
-        array_del(parser->nodes);
-    }
+    array_del(parser->nodes);
 }
 
 static size_t new_node(struct Parser *const parser, const struct Token tok) {
@@ -304,9 +299,6 @@ static bool parse_expression(struct Parser *const parser, size_t *const tk_idx, 
 }
 
 size_t parse(struct Parser *const parser) {
-    if (parser == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     if (array_size(parser->lexer->tokens) == 0) {
         return INVALID_PARSER_INDEX;
     }
@@ -371,10 +363,7 @@ static inline double perform_function_call(struct Parser *const parser, const si
 }
 
 double evaluate(struct Parser *const parser, const size_t node_idx, enum Evaluation_Status *const status) {
-    if (parser == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
-    if ((status == NULL) || (*status == Eval_Error)) {
+    if (*status == Eval_Error) {
         return NAN;
     }
     if (array_index_is_invalid(parser->nodes, node_idx)) {
@@ -532,9 +521,6 @@ static void print_node(struct Parser *const parser, const size_t node_idx, const
 }
 
 void print_tree(struct Parser *const parser, const size_t head_idx) {
-    if (parser == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     if (array_index_is_invalid(parser->nodes, head_idx)) {
         return;
     }
@@ -567,9 +553,6 @@ static void print_graph_node(struct Parser *const parser, const size_t node_idx)
 }
 
 void print_graph(struct Parser *const parser, const size_t head_idx) {
-    if (parser == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     if (array_index_is_invalid(parser->nodes, head_idx)) {
         return;
     }

@@ -29,13 +29,16 @@
 
 #include <stddef.h>
 
-#ifndef __GNUC__
+#if !defined(__GNUC__) && !defined(__attribute__)
 #define __attribute__(a)
 #endif
 
-void print_crash_and_exit(const char *const msg, ...) __attribute__((__noreturn__, format(printf, 1, 2)));
-void print_error(const char *const msg, ...) __attribute__((format(printf, 1, 2)));
-void print_warning(const char *const msg, ...) __attribute__((format(printf, 1, 2)));
+void print_crash_and_exit(const char *const msg, ...)
+    __attribute__((nonnull, __noreturn__, format(printf, 1, 2)));
+void print_error(const char *const msg, ...)
+    __attribute__((nonnull, format(printf, 1, 2)));
+void print_warning(const char *const msg, ...)
+    __attribute__((nonnull, format(printf, 1, 2)));
 void print_column(const size_t column);
 
 #endif  // __PRINT_ERRORS

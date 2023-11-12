@@ -29,6 +29,10 @@
 
 #include "data-structures/sized_string.h"
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(a)
+#endif
+
 struct Variable {
     struct String name;
     double value;
@@ -40,21 +44,32 @@ struct Variables {
 };
 
 struct Variables create_variables(const size_t initial_list_size);
-void destroy_variables(struct Variables *const vars);
-void clear_variables(struct Variables *const vars);
-int search_variable(struct Variables *const vars, const struct String name, size_t *const index);
-void new_variable(struct Variables *const vars, const size_t index, const struct String name, const double value);
-int delete_variable(struct Variables *const vars, const struct String name);
-double assign_variable(struct Variables *const vars, const struct String name, const double value);
-double get_variable_value(struct Variables *const vars, const size_t index);
-void print_variables(struct Variables *const vars);
-bool variable_list_is_empty(struct Variables *const vars);
+void destroy_variables(struct Variables *const vars)
+    __attribute__((nonnull));
+void clear_variables(struct Variables *const vars)
+    __attribute__((nonnull));
+int search_variable(struct Variables *const vars, const struct String name, size_t *const index)
+    __attribute__((nonnull));
+void new_variable(struct Variables *const vars, const size_t index, const struct String name, const double value)
+    __attribute__((nonnull));
+int delete_variable(struct Variables *const vars, const struct String name)
+    __attribute__((nonnull));
+double assign_variable(struct Variables *const vars, const struct String name, const double value)
+    __attribute__((nonnull));
+double get_variable_value(struct Variables *const vars, const size_t index)
+    __attribute__((nonnull));
+void print_variables(struct Variables *const vars)
+    __attribute__((nonnull));
+bool variable_list_is_empty(struct Variables *const vars)
+    __attribute__((nonnull));
 
 // The functions bellow can load and save the variables to file.
 // The data is saved in the file using the structure "key = value" in each line.
 // The key must be a valid variable name and the value must be a number.
-void load_variables_from_file(struct Variables *const vars, const struct String file_name);
-void save_variables_to_file(struct Variables *const vars, const struct String file_name);
+void load_variables_from_file(struct Variables *const vars, const struct String file_name)
+    __attribute__((nonnull));
+void save_variables_to_file(struct Variables *const vars, const struct String file_name)
+    __attribute__((nonnull));
 
 #endif  // __VARIABLES
 

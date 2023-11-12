@@ -32,6 +32,10 @@
 #include "data-structures/sized_string.h"
 #include "variables.h"
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(a)
+#endif
+
 // Struct used to store the argument of a function. It may contain a value,
 // a name (possible referente to a variable), or both
 struct Fn_Arg {
@@ -56,7 +60,8 @@ size_t search_function(const struct String name);
 void print_functions(void);
 
 // Defined on main.c
-double fn_exit(struct Variables *const vars, size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg);
+double fn_exit(struct Variables *const vars, size_t column, const struct Fn_Arg first_arg, const struct Fn_Arg second_arg)
+    __attribute__((nonnull));
 
 #endif  // __FUNCTIONS
 

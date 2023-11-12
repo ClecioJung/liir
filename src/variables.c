@@ -47,16 +47,11 @@ struct Variables create_variables(const size_t initial_list_size) {
 }
 
 void destroy_variables(struct Variables *const vars) {
-    if (vars != NULL) {
-        clear_variables(vars);
-        array_del(vars->list);
-    }
+    clear_variables(vars);
+    array_del(vars->list);
 }
 
 void clear_variables(struct Variables *const vars) {
-    if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     // Deallocate the memory used to store the variable name
     for (size_t i = 0; i < array_size(vars->list); i++) {
         free((void *)(vars->list[i].name.data));
@@ -69,9 +64,6 @@ void clear_variables(struct Variables *const vars) {
 // In this function, if the variable was not found, we already know the correct index to insert it,
 // preserving the list of variables sorted
 int search_variable(struct Variables *const vars, const struct String name, size_t *const index) {
-    if ((vars == NULL) || (index == NULL)) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     // Binary search in variables list
     size_t low = 0;
     size_t high = array_size(vars->list) - 1;
@@ -91,9 +83,6 @@ int search_variable(struct Variables *const vars, const struct String name, size
 }
 
 void new_variable(struct Variables *const vars, const size_t index, const struct String name, const double value) {
-    if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     struct Variable new_var = (struct Variable){ 0 };
     new_var.name.data = malloc(name.length*sizeof(char));
     if (new_var.name.data == NULL) {
@@ -106,9 +95,6 @@ void new_variable(struct Variables *const vars, const size_t index, const struct
 }
 
 int delete_variable(struct Variables *const vars, const struct String name) {
-    if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     size_t index;
     if (search_variable(vars, name, &index) != EXIT_SUCCESS) {
         // Didn't found the variable in the list
@@ -121,9 +107,6 @@ int delete_variable(struct Variables *const vars, const struct String name) {
 }
 
 double assign_variable(struct Variables *const vars, const struct String name, const double value) {
-    if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     size_t index;
     if (search_variable(vars, name, &index) != EXIT_SUCCESS) {
         // Insert new variable in alphabetical order
@@ -136,9 +119,6 @@ double assign_variable(struct Variables *const vars, const struct String name, c
 }
 
 double get_variable_value(struct Variables *const vars, const size_t index) {
-    if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     if (array_index_is_invalid(vars->list, index)) {
         return NAN;
     }
@@ -157,9 +137,6 @@ static inline unsigned int longest_variable_name(struct Variables *const vars) {
 }
 
 void print_variables(struct Variables *const vars) {
-    if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     if (array_size(vars->list) == 0) {
         return;
     }
@@ -222,9 +199,6 @@ void remove_whitespaces(char **str) {
 }
 
 void load_variables_from_file(struct Variables *const vars, const struct String file_name) {
-    if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     // Convert the file name to a C-string
     char file_name_str[file_name.length + 1];
     strncpy(file_name_str, file_name.data, file_name.length);
@@ -270,9 +244,6 @@ void load_variables_from_file(struct Variables *const vars, const struct String 
 }
 
 void save_variables_to_file(struct Variables *const vars, const struct String file_name) {
-    if (vars == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     if (array_size(vars->list) == 0) {
         return;
     }

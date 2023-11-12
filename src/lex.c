@@ -51,9 +51,7 @@ struct Lexer create_lex(const size_t initial_size) {
 }
 
 void destroy_lex(struct Lexer *const lexer) {
-    if (lexer != NULL) {
-        array_del(lexer->tokens);
-    }
+    array_del(lexer->tokens);
 }
 
 static void advance_line(struct String *const line, size_t *const column, String_Length value) {
@@ -67,9 +65,6 @@ static void advance_line(struct String *const line, size_t *const column, String
 
 // This function returns true if found an error
 bool lex(struct Lexer *const lexer, struct String line) {
-    if (lexer == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     array_free_all(lexer->tokens);
     for (size_t column = 0; line.length > 0;) {
         const char c = *line.data;
@@ -237,9 +232,6 @@ void print_token(const struct Token tok) {
 }
 
 void print_tokens(struct Lexer *const lexer) {
-    if (lexer == NULL) {
-        print_crash_and_exit("Invalid call to function \"%s()\"!\n", __func__);
-    }
     if (array_size(lexer->tokens) == 0) {
         return;
     }

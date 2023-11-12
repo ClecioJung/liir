@@ -32,6 +32,10 @@
 
 #include "data-structures/sized_string.h"
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(a)
+#endif
+
 enum Tok_Types {
     TOK_OPERATOR,        // '+', '-', '*', '/', '^' or '='
     TOK_UNARY_OPERATOR,  // -
@@ -58,12 +62,15 @@ struct Lexer {
 };
 
 struct Lexer create_lex(const size_t initial_size);
-void destroy_lex(struct Lexer *const lexer);
-bool lex(struct Lexer *const lexer, const struct String line);
+void destroy_lex(struct Lexer *const lexer)
+    __attribute__((nonnull));
+bool lex(struct Lexer *const lexer, const struct String line)
+    __attribute__((nonnull));
 char *get_token_type(const enum Tok_Types type);
 void print_token_string(const struct Token tok);
 void print_token(const struct Token tok);
-void print_tokens(struct Lexer *const lexer);
+void print_tokens(struct Lexer *const lexer)
+    __attribute__((nonnull));
 
 #endif  // __LEX
 

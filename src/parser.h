@@ -30,6 +30,10 @@
 #include "lex.h"
 #include "variables.h"
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(a)
+#endif
+
 // Nodes of the abstract syntax tree (AST)
 struct Token_Node {
     struct Token tok;
@@ -51,14 +55,20 @@ enum Evaluation_Status {
     Eval_Error,
 };
 
-struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size);
-void destroy_parser(struct Parser *const parser);
-size_t parse(struct Parser *const parser);
-double evaluate(struct Parser *const parser, const size_t node_idx, enum Evaluation_Status *const status);
-void print_tree(struct Parser *const parser, const size_t head_idx);
+struct Parser create_parser(struct Lexer *const lexer, struct Variables *const vars, const size_t initial_size)
+    __attribute__((nonnull));
+void destroy_parser(struct Parser *const parser)
+    __attribute__((nonnull));
+size_t parse(struct Parser *const parser)
+    __attribute__((nonnull));
+double evaluate(struct Parser *const parser, const size_t node_idx, enum Evaluation_Status *const status)
+    __attribute__((nonnull));
+void print_tree(struct Parser *const parser, const size_t head_idx)
+    __attribute__((nonnull));
 // Outputs to stdout a graph representation of the abstract syntax tree (AST) generated
 // It can be copied to graphviz to generate a visual graph representation
-void print_graph(struct Parser *const parser, const size_t head_idx);
+void print_graph(struct Parser *const parser, const size_t head_idx)
+    __attribute__((nonnull));
 
 #endif  // __PARSER
 

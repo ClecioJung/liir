@@ -31,6 +31,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(a)
+#endif
+
 // Sized struct for storing and handling strings
 // Unlike C-strings, this structure is not null terminated
 // Since the strings used in this application are very small,
@@ -43,11 +47,15 @@ struct String {
     char *data;
 };
 
-void print_string_to(FILE *const file, const struct String str);
+void print_string_to(FILE *const file, const struct String str)
+    __attribute__((nonnull));
 void print_string(const struct String str);
-struct String create_string(char *const cstr);
-struct String create_sized_string(char *const str, const String_Length length);
-bool string_is_empty(const struct String *const str);
+struct String create_string(char *const cstr)
+    __attribute__((nonnull));
+struct String create_sized_string(char *const str, const String_Length length)
+    __attribute__((nonnull));
+bool string_is_empty(const struct String *const str)
+    __attribute__((nonnull));
 int string_compare(const struct String str1, const struct String str2);
 
 // Functions used to convert strings to numbers (without checking for signal)
