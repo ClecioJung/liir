@@ -41,10 +41,16 @@ ifndef CC
 endif
 DEBUGGER      := gdb
 
+# Git version
+# Based on: https://stackoverflow.com/questions/1704907/how-can-i-get-my-c-code-to-automatically-print-out-its-git-version-hash
+GIT_VERSION   := "$(shell git describe --always --dirty --tags)"
+
 # Flags for compiler
 COMMON_FLAGS  := -W -Wall -Wextra -pedantic -Wconversion -Wswitch-enum -Werror -flto -std=c11
 RELEASE_FLAGS := -O2
-DEBUG_FLAGS   := -O0 -g -DDEBUG
+RELEASE_DEFS  := -DPROJECT=\"$(PROJECT)\" -DVERSION=\"$(GIT_VERSION)\"
+DEBUG_FLAGS   := -O0 -g
+DEBUG_DEFS    := -DPROJECT=\"$(PROJECT)\" -DVERSION=\"$(GIT_VERSION)\" -DDEBUG
 LINK_FLAGS    := -flto
 
 # Libraries
@@ -89,16 +95,15 @@ endif
 # Based on: https://stackoverflow.com/questions/2483182/recursive-wildcards-in-gnu-make
 rwildcard     = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
-# Git version
-# Based on: https://stackoverflow.com/questions/1704907/how-can-i-get-my-c-code-to-automatically-print-out-its-git-version-hash
-GIT_VERSION   := "$(shell git describe --always --dirty --tags)"
-
-# Name of the executable
+# Name of the outputs of each rule
 RELEASE_EXEC  := $(addprefix $(RELEASE_DIR)/, $(PROJECT))
 DEBUG_EXEC    := $(addprefix $(DEBUG_DIR)/, $(PROJECT))
 
 # Source files
 SRCS          := $(call rwildcard,$(SDIR),*.c)
+
+# Header files
+INCS          := $(call rwildcard,$(SDIR),*.h)
 
 # Dependency files (auto generated)
 DEPS          := $(patsubst %,%.d,$(basename $(subst $(SDIR),$(DDIR),$(SRCS))))
@@ -123,8 +128,8 @@ RELEASE_DDIRS := $(sort $(dir $(RELEASE_DEPS)))
 DEBUG_DDIRS   := $(sort $(dir $(DEBUG_DEPS)))
 
 # Flags for compiler
-REL_CFLAGS    := $(COMMON_FLAGS) $(RELEASE_FLAGS)
-DEB_CFLAGS    := $(COMMON_FLAGS) $(DEBUG_FLAGS)
+REL_CFLAGS    := $(COMMON_FLAGS) $(RELEASE_FLAGS) $(RELEASE_DEFS)
+DEB_CFLAGS    := $(COMMON_FLAGS) $(DEBUG_FLAGS) $(DEBUG_DEFS)
 LINK_CFLAGS   := $(LINK_FLAGS) $(LIBS)
 
 # ----------------------------------------
